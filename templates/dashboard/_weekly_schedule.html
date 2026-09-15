@@ -1,0 +1,16 @@
+<div class="card">
+  <h2>Jadwal Reservasi Mingguan</h2>
+  <form class="filter-row" method="get">
+    <label>Fasilitas
+      <select name="fasilitas"><option value="">Semua Fasilitas</option>{% for fasilitas in schedule_facilities %}<option value="{{ fasilitas.pk }}" {% if selected_facility == fasilitas.pk %}selected{% endif %}>{{ fasilitas.nama_fasilitas }}</option>{% endfor %}</select>
+    </label>
+    <label>Pilih minggu/tanggal<input type="date" name="minggu" value="{{ week_start|date:'Y-m-d' }}"></label>
+    <button type="submit">Tampilkan</button>
+  </form>
+</div>
+<div class="card table-wrap">
+  <div class="legend"><span class="legend-booked">Sudah Dibooking</span><span>Tersedia</span></div>
+  <table class="weekly-schedule"><thead><tr><th>Jam</th>{% for day in schedule.days %}<th>{{ day|date:'D, d M' }}</th>{% endfor %}</tr></thead><tbody>
+  {% for row in schedule.rows %}<tr><th>{{ row.label }}</th>{% for cell in row.cells %}{% if not cell.skip %}<td rowspan="{{ cell.rowspan }}">{% for booking in cell.bookings %}<span class="booking">{{ booking.fasilitas.nama_fasilitas }}<br>{{ booking.jam_mulai|time:'H:i' }} - {{ booking.jam_selesai|time:'H:i' }}<br>Terbooking</span>{% empty %}<span class="available">Tersedia</span>{% endfor %}</td>{% endif %}{% endfor %}</tr>{% endfor %}
+  </tbody></table>
+</div>

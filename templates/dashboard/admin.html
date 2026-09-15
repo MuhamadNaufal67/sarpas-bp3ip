@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block page_title %}Dashboard{% endblock %}{% block content %}
+<div class="page-heading"><div><h1>Dashboard Admin</h1><p>Ringkasan reservasi dan jadwal fasilitas BP3IP.</p></div></div><div class="stats"><div class="stat">Total Reservasi<b>{{ total }}</b></div><div class="stat">Menunggu Approval<b>{{ pending }}</b></div><div class="stat">Disetujui<b>{{ approved }}</b></div><div class="stat">Ditolak<b>{{ rejected }}</b></div><div class="stat">Reservasi Hari Ini<b>{{ hari_ini }}</b></div></div>
+{% include 'dashboard/_weekly_schedule.html' %}
+{% include 'dashboard/_recent_notifications.html' %}
+{% endblock %}

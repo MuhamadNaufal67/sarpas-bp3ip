@@ -1,0 +1,3 @@
+{% extends 'base.html' %}{% load static %}{% block title %}Login | SARPAS BP3IP{% endblock %}{% block content %}
+<div class="login-page"><div class="login-card"><div class="login-logo"><img src="{% static 'images/logo-bp3ip.png' %}" alt="Logo BP3IP" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="login-fallback">BP3IP</span></div><h1>SARPAS BP3IP</h1><p class="muted login-subtitle">Sistem Informasi Reservasi<br>Sarana dan Prasarana</p><form method="post">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<label>{{ field.label }}</label>{{ field }}{{ field.errors }}{% endfor %}<button type="submit">Login</button></form></div></div>
+{% endblock %}

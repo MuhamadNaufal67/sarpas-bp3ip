@@ -1,0 +1,225 @@
+from django.contrib import messages
+from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
+from django.db import transaction
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from .decorators import role_required
+from .forms import FasilitasForm, RejectReservasiForm, ReservasiForm, fasilitas_tersedia
+from .models import Fasilitas, Notifikasi, Reservasi, User
+from .schedule import schedule_context
+
+
+def kirim_notifikasi(penerima, judul, pesan):
+    return Notifikasi.objects.create(penerima=penerima, judul=judul, pesan=pesan)
+
+
+def kirim_ke_atasan(judul, pesan):
+    for atasan in User.objects.filter(role=User.Role.ATASAN, is_active=True):
+        kirim_notifikasi(atasan, judul, pesan)
+
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+    form = AuthenticationForm(request, data=request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        login(request, form.get_user())
+        return redirect(request.GET.get("next") or "dashboard")
+    return render(request, "registration/login.html", {"form": form})
+
+
+@require_POST
+@login_required
+def logout_view(request):
+    logout(request)
+    return redirect("login")
+
+
+@login_required
+def dashboard(request):
+    if request.user.role == User.Role.ADMIN:
+        reservasi = Reservasi.objects.filter(pemohon=request.user)
+        jadwal = Reservasi.objects.filter(status=Reservasi.Status.APPROVED).select_related("fasilitas")
+        tanggal_filter = request.GET.get("tanggal")
+        if tanggal_filter:
+            jadwal = jadwal.filter(tanggal=tanggal_filter)
+        context = {
+            "total": reservasi.count(),
+            "pending": reservasi.filter(status=Reservasi.Status.PENDING).count(),
+            "approved": reservasi.filter(status=Reservasi.Status.APPROVED).count(),
+            "rejected": reservasi.filter(status=Reservasi.Status.REJECTED).count(),
+            "hari_ini": reservasi.filter(tanggal=timezone.localdate()).count(),
+            "jadwal": jadwal,
+            "tanggal_filter": tanggal_filter,
+            "notifikasi_terbaru": request.user.notifikasi.all()[:5],
+        }
+        context.update(schedule_context(request))
+        return render(request, "dashboard/admin.html", context)
+
+    pengajuan = Reservasi.objects.select_related("pemohon", "fasilitas")
+    context = {
+        "pending": pengajuan.filter(status=Reservasi.Status.PENDING).count(),
+        "approved": pengajuan.filter(status=Reservasi.Status.APPROVED).count(),
+        "rejected": pengajuan.filter(status=Reservasi.Status.REJECTED).count(),
+        "pengajuan_terbaru": pengajuan[:8],
+        "notifikasi_terbaru": request.user.notifikasi.all()[:5],
+    }
+    context.update(schedule_context(request))
+    return render(request, "dashboard/atasan.html", context)
+
+
+@role_required(User.Role.ADMIN)
+def fasilitas_list(request):
+    return render(request, "facilities/list.html", {"fasilitas_list": Fasilitas.objects.all()})
+
+
+@role_required(User.Role.ADMIN)
+def fasilitas_detail(request, pk):
+    return render(request, "facilities/detail.html", {"fasilitas": get_object_or_404(Fasilitas, pk=pk)})
+
+
+@role_required(User.Role.ADMIN)
+def fasilitas_create(request):
+    form = FasilitasForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Fasilitas berhasil ditambahkan.")
+        return redirect("fasilitas_list")
+    return render(request, "facilities/form.html", {"form": form, "judul": "Tambah Fasilitas"})
+
+
+@role_required(User.Role.ADMIN)
+def fasilitas_update(request, pk):
+    fasilitas = get_object_or_404(Fasilitas, pk=pk)
+    form = FasilitasForm(request.POST or None, instance=fasilitas)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Fasilitas berhasil diperbarui.")
+        return redirect("fasilitas_detail", pk=pk)
+    return render(request, "facilities/form.html", {"form": form, "judul": "Edit Fasilitas"})
+
+
+@require_POST
+@role_required(User.Role.ADMIN)
+def fasilitas_delete(request, pk):
+    fasilitas = get_object_or_404(Fasilitas, pk=pk)
+    try:
+        fasilitas.delete()
+        messages.success(request, "Fasilitas berhasil dihapus.")
+    except Exception:
+        messages.error(request, "Fasilitas tidak dapat dihapus karena sudah dipakai dalam reservasi.")
+    return redirect("fasilitas_list")
+
+
+@role_required(User.Role.ADMIN)
+def reservasi_list(request):
+    reservasi = Reservasi.objects.filter(pemohon=request.user).select_related("fasilitas")
+    return render(request, "reservations/list.html", {"reservasi_list": reservasi})
+
+
+@role_required(User.Role.ADMIN)
+def reservasi_create(request):
+    form = ReservasiForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        reservasi = form.save(commit=False)
+        reservasi.pemohon = request.user
+        reservasi.status = Reservasi.Status.PENDING
+        reservasi.save()
+        kirim_ke_atasan("Pengajuan reservasi baru", f"{request.user.nama} mengajukan {reservasi.fasilitas} pada {reservasi.tanggal}.")
+        messages.success(request, "Pengajuan reservasi berhasil dikirim dan menunggu approval.")
+        return redirect("reservasi_list")
+    return render(request, "reservations/form.html", {"form": form, "judul": "Ajukan Reservasi"})
+
+
+@role_required(User.Role.ADMIN)
+def reservasi_update(request, pk):
+    reservasi = get_object_or_404(Reservasi, pk=pk, pemohon=request.user)
+    if reservasi.status not in [Reservasi.Status.DRAFT, Reservasi.Status.NEEDS_REVISION]:
+        messages.error(request, "Hanya reservasi Draft atau Perlu Diperbaiki yang dapat diubah.")
+        return redirect("reservasi_list")
+    form = ReservasiForm(request.POST or None, instance=reservasi)
+    if request.method == "POST" and form.is_valid():
+        reservasi = form.save(commit=False)
+        reservasi.status = Reservasi.Status.PENDING
+        reservasi.alasan_penolakan = ""
+        reservasi.save()
+        kirim_ke_atasan("Pengajuan reservasi diperbarui", f"{request.user.nama} mengajukan kembali {reservasi.fasilitas} pada {reservasi.tanggal}.")
+        messages.success(request, "Reservasi diperbarui dan dikirim kembali untuk approval.")
+        return redirect("reservasi_list")
+    return render(request, "reservations/form.html", {"form": form, "judul": "Perbaiki Reservasi"})
+
+
+@role_required(User.Role.ATASAN)
+def pengajuan_list(request):
+    pengajuan = Reservasi.objects.select_related("pemohon", "fasilitas")
+    return render(request, "reservations/submissions.html", {"pengajuan": pengajuan})
+
+
+@role_required(User.Role.ATASAN)
+def pengajuan_detail(request, pk):
+    reservasi = get_object_or_404(Reservasi.objects.select_related("pemohon", "fasilitas"), pk=pk)
+    return render(request, "reservations/detail.html", {"reservasi": reservasi, "reject_form": RejectReservasiForm()})
+
+
+@require_POST
+@role_required(User.Role.ATASAN)
+def pengajuan_approve(request, pk):
+    with transaction.atomic():
+        reservasi = get_object_or_404(Reservasi.objects.select_for_update().select_related("fasilitas", "pemohon"), pk=pk)
+        if reservasi.status != Reservasi.Status.PENDING:
+            messages.error(request, "Hanya pengajuan Menunggu Approval yang dapat diproses.")
+            return redirect("pengajuan_detail", pk=pk)
+        if not fasilitas_tersedia(reservasi.fasilitas, reservasi.tanggal, reservasi.jam_mulai, reservasi.jam_selesai, reservasi.pk):
+            messages.error(request, "Fasilitas sudah disetujui untuk jadwal lain.")
+            return redirect("pengajuan_detail", pk=pk)
+        reservasi.status = Reservasi.Status.APPROVED
+        reservasi.save()
+        kirim_notifikasi(reservasi.pemohon, "Reservasi disetujui", f"Reservasi {reservasi.fasilitas} pada {reservasi.tanggal} telah disetujui.")
+        konflik = Reservasi.objects.filter(
+            fasilitas=reservasi.fasilitas, tanggal=reservasi.tanggal, status=Reservasi.Status.PENDING,
+            jam_mulai__lt=reservasi.jam_selesai, jam_selesai__gt=reservasi.jam_mulai,
+        ).exclude(pk=reservasi.pk).select_related("pemohon")
+        for item in konflik:
+            item.status = Reservasi.Status.NEEDS_REVISION
+            item.save(update_fields=["status", "updated_at"])
+            kirim_notifikasi(item.pemohon, "Reservasi perlu diperbaiki", "Reservasi yang Anda ajukan tidak dapat diproses karena fasilitas telah disetujui untuk reservasi lain pada waktu yang sama. Silakan memilih jadwal atau fasilitas lain.")
+    messages.success(request, "Reservasi disetujui. Pengajuan yang bentrok telah ditandai.")
+    return redirect("pengajuan_detail", pk=pk)
+
+
+@require_POST
+@role_required(User.Role.ATASAN)
+def pengajuan_reject(request, pk):
+    reservasi = get_object_or_404(Reservasi.objects.select_related("pemohon"), pk=pk)
+    if reservasi.status != Reservasi.Status.PENDING:
+        messages.error(request, "Hanya pengajuan Menunggu Approval yang dapat diproses.")
+        return redirect("pengajuan_detail", pk=pk)
+    form = RejectReservasiForm(request.POST)
+    if not form.is_valid():
+        return render(request, "reservations/detail.html", {"reservasi": reservasi, "reject_form": form})
+    reservasi.status = Reservasi.Status.REJECTED
+    reservasi.alasan_penolakan = form.cleaned_data["alasan_penolakan"]
+    reservasi.save(update_fields=["status", "alasan_penolakan", "updated_at"])
+    kirim_notifikasi(reservasi.pemohon, "Reservasi ditolak", f"Reservasi Anda ditolak. Alasan: {reservasi.alasan_penolakan}")
+    messages.success(request, "Reservasi telah ditolak.")
+    return redirect("pengajuan_detail", pk=pk)
+
+
+@login_required
+def notifikasi_list(request):
+    return render(request, "notifications/list.html", {"notifikasi_list": request.user.notifikasi.all()})
+
+
+@require_POST
+@login_required
+def notifikasi_baca(request, pk):
+    notifikasi = get_object_or_404(Notifikasi, pk=pk, penerima=request.user)
+    notifikasi.status_baca = True
+    notifikasi.save(update_fields=["status_baca"])
+    return redirect("notifikasi_list")
+
+# Create your views here.
