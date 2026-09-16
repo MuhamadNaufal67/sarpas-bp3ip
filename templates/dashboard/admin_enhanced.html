@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% block page_title %}Dashboard{% endblock %}{% block content %}
+<div class="page-heading"><h1>Dashboard {{ user.get_role_display }}</h1><p>Ringkasan reservasi dan jadwal fasilitas BP3IP.</p></div>
+{% if user.role == 'OPERATOR' %}<a class="button" href="{% url 'fasilitas_list' %}">Kelola Fasilitas</a>{% else %}<a class="button" href="{% url 'reservasi_create' %}">Ajukan Reservasi</a><a class="button secondary" href="{% url 'reservasi_list' %}">Reservasi Saya</a>{% endif %}
+<div class="stats"><div class="stat">Total Reservasi<b>{{ total }}</b></div><div class="stat">Menunggu Approval<b>{{ pending }}</b></div><div class="stat">Disetujui<b>{{ approved }}</b></div><div class="stat">Ditolak<b>{{ rejected }}</b></div><div class="stat">Reservasi Hari Ini<b>{{ hari_ini }}</b></div></div>
+{% include 'dashboard/_weekly_schedule.html' %}{% include 'dashboard/_recent_notifications.html' %}
+{% endblock %}

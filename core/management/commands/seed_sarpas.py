@@ -9,6 +9,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         akun = [
             ("admin", "Admin BP3IP", "admin@sarpas.local", User.Role.ADMIN),
+            ("superadmin", "Super Admin BP3IP", "superadmin@sarpas.local", User.Role.SUPER_ADMIN),
             ("atasan", "Atasan BP3IP", "atasan@sarpas.local", User.Role.ATASAN),
         ]
         for username, nama, email, role in akun:

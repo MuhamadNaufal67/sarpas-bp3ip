@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Reservasi Saya</h1>
+<a class="button" href="{% url 'reservasi_create' %}">Ajukan Reservasi</a>
+<div class="card table-wrap"><table><tr><th>Fasilitas</th><th>Tanggal</th><th>Jam</th><th>Keperluan</th><th>Status</th><th>Aksi</th></tr>
+{% for item in reservasi_list %}<tr><td>{{ item.fasilitas }}</td><td>{{ item.tanggal|date:'d M Y' }}</td><td>{{ item.jam_mulai|time:'H.i' }}&ndash;{{ item.jam_selesai|time:'H.i' }}</td><td>{{ item.keperluan }}</td><td class="status">{{ item.get_status_display }}{% if item.alasan_penolakan %}<br><small>Alasan penolakan: {{ item.alasan_penolakan }}</small>{% endif %}{% if item.alasan_pembatalan %}<br><small>Alasan pembatalan: {{ item.alasan_pembatalan }}</small>{% endif %}</td><td>{% if item.status == 'DRAFT' or item.status == 'NEEDS_REVISION' %}<a class="button" href="{% url 'reservasi_update' item.pk %}">Perbaiki</a>{% elif item.status == 'PENDING' or item.status == 'APPROVED' %}<details><summary>Batalkan</summary><form method="post" action="{% url 'reservasi_cancel' item.pk %}">{% csrf_token %}<label>Alasan pembatalan<textarea name="alasan_pembatalan" rows="2" required></textarea></label><button class="danger" type="submit">Konfirmasi batal</button></form></details>{% else %}-{% endif %}</td></tr>{% empty %}<tr><td colspan="6">Belum ada reservasi.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

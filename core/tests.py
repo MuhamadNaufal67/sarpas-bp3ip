@@ -91,7 +91,7 @@ class SarpasTestCase(TestCase):
         Notifikasi.objects.create(penerima=self.atasan, judul="Untuk Atasan", pesan="Pesan atasan")
         self.client.login(username="admin1", password="password-kuat-123")
         response = self.client.get(reverse("dashboard"))
-        self.assertContains(response, 'class="header-badge">1')
+        self.assertContains(response, "Notifikasi (1)")
         self.assertContains(response, "Untuk Admin")
         self.assertNotContains(response, "Untuk Atasan")
         self.client.post(reverse("notifikasi_baca", args=[own.pk]))

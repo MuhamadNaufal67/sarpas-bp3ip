@@ -7,6 +7,7 @@ from .models import Fasilitas, Reservasi
 
 SLOT_START_HOUR = 7
 SLOT_END_HOUR = 18
+SLOT_MINUTES = 30
 
 
 def get_week_start(value=None):
@@ -30,15 +31,15 @@ def get_weekly_schedule(week_start, facility_id=None):
     reservasi = list(reservasi)
 
     days = [week_start + timedelta(days=index) for index in range(6)]
-    slot_count = SLOT_END_HOUR - SLOT_START_HOUR
+    slot_count = (SLOT_END_HOUR - SLOT_START_HOUR) * (60 // SLOT_MINUTES)
     grid = [[{"bookings": [], "rowspan": 1, "skip": False} for _ in days] for _ in range(slot_count)]
 
     for item in reservasi:
         day_index = (item.tanggal - week_start).days
         affected_slots = [
             index for index in range(slot_count)
-            if item.jam_mulai < time(SLOT_START_HOUR + index + 1, 0)
-            and item.jam_selesai > time(SLOT_START_HOUR + index, 0)
+            if item.jam_mulai < (datetime.combine(week_start, time(SLOT_START_HOUR)) + timedelta(minutes=(index + 1) * SLOT_MINUTES)).time()
+            and item.jam_selesai > (datetime.combine(week_start, time(SLOT_START_HOUR)) + timedelta(minutes=index * SLOT_MINUTES)).time()
         ]
         if not affected_slots:
             continue
@@ -62,7 +63,10 @@ def get_weekly_schedule(week_start, facility_id=None):
         cell["bookings"].append(item)
 
     rows = [
-        {"label": f"{SLOT_START_HOUR + index:02d}:00 - {SLOT_START_HOUR + index + 1:02d}:00", "cells": grid[index]}
+        {"label": "{} - {}".format(
+            (datetime.combine(week_start, time(SLOT_START_HOUR)) + timedelta(minutes=index * SLOT_MINUTES)).strftime("%H:%M"),
+            (datetime.combine(week_start, time(SLOT_START_HOUR)) + timedelta(minutes=(index + 1) * SLOT_MINUTES)).strftime("%H:%M"),
+        ), "cells": grid[index]}
         for index in range(slot_count)
     ]
     return {"days": days, "rows": rows}
