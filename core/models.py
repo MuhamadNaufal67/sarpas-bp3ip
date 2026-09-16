@@ -6,11 +6,12 @@ from django.db import models
 class User(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = "ADMIN", "Admin"
+        SUPER_ADMIN = "SUPER_ADMIN", "Super Admin"
         ATASAN = "ATASAN", "Atasan"
 
     nama = models.CharField(max_length=150)
     email = models.EmailField(unique=True)
-    role = models.CharField(max_length=10, choices=Role.choices, default=Role.ADMIN)
+    role = models.CharField(max_length=15, choices=Role.choices, default=Role.ADMIN)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -62,11 +63,18 @@ class Reservasi(models.Model):
     keterangan = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     alasan_penolakan = models.TextField(blank=True)
+    alasan_pembatalan = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-tanggal", "jam_mulai"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(jam_selesai__gt=models.F("jam_mulai")),
+                name="reservasi_jam_selesai_setelah_mulai",
+            ),
+        ]
 
     def clean(self):
         if self.jam_mulai and self.jam_selesai and self.jam_selesai <= self.jam_mulai:
@@ -89,5 +97,20 @@ class Notifikasi(models.Model):
 
     def __str__(self):
         return self.judul
+
+
+class AuditLog(models.Model):
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="audit_logs")
+    aksi = models.CharField(max_length=100)
+    entitas = models.CharField(max_length=100)
+    entitas_id = models.PositiveBigIntegerField(null=True, blank=True)
+    detail = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.aksi} - {self.entitas}"
 
 # Create your models here.

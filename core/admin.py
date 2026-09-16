@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Fasilitas, Notifikasi, Reservasi, User
+from .models import AuditLog, Fasilitas, Notifikasi, Reservasi, User
 
 
 @admin.register(User)
@@ -22,7 +22,8 @@ class FasilitasAdmin(admin.ModelAdmin):
 
 @admin.register(Reservasi)
 class ReservasiAdmin(admin.ModelAdmin):
-    list_display = ("fasilitas", "pemohon", "tanggal", "jam_mulai", "jam_selesai", "status")
+    list_display = ("fasilitas", "pemohon", "tanggal", "jam_mulai", "jam_selesai", "status", "updated_at")
+    readonly_fields = ("created_at", "updated_at")
     list_filter = ("status", "tanggal")
     search_fields = ("fasilitas__nama_fasilitas", "pemohon__nama")
 
@@ -31,3 +32,11 @@ class ReservasiAdmin(admin.ModelAdmin):
 class NotifikasiAdmin(admin.ModelAdmin):
     list_display = ("judul", "penerima", "status_baca", "created_at")
     list_filter = ("status_baca",)
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "actor", "aksi", "entitas", "entitas_id")
+    list_filter = ("aksi", "entitas")
+    search_fields = ("detail", "actor__nama")
+    readonly_fields = ("actor", "aksi", "entitas", "entitas_id", "detail", "created_at")
