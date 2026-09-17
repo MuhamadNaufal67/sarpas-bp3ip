@@ -62,18 +62,12 @@ def dashboard(request):
 
     if request.user.role == User.Role.ADMIN:
         reservasi = Reservasi.objects.filter(pemohon=request.user)
-        jadwal = Reservasi.objects.filter(status=Reservasi.Status.APPROVED).select_related("fasilitas")
-        tanggal_filter = request.GET.get("tanggal")
-        if tanggal_filter:
-            jadwal = jadwal.filter(tanggal=tanggal_filter)
         context = {
             "total": reservasi.count(),
             "pending": reservasi.filter(status=Reservasi.Status.PENDING).count(),
             "approved": reservasi.filter(status=Reservasi.Status.APPROVED).count(),
             "rejected": reservasi.filter(status=Reservasi.Status.REJECTED).count(),
             "hari_ini": reservasi.filter(tanggal=timezone.localdate()).count(),
-            "jadwal": jadwal,
-            "tanggal_filter": tanggal_filter,
             "notifikasi_terbaru": request.user.notifikasi.all()[:5],
         }
         context.update(schedule_context(request))
@@ -141,7 +135,7 @@ def fasilitas_delete(request, pk):
 @role_required(User.Role.ADMIN)
 def reservasi_list(request):
     reservasi = Reservasi.objects.filter(pemohon=request.user).select_related("fasilitas")
-    return render(request, "reservations/list_enhanced.html", {"reservasi_list": reservasi})
+    return render(request, "reservations/list_enhanced.html", {"reservasi_list": reservasi, "cancel_form": CancelReservasiForm()})
 
 
 @role_required(User.Role.ADMIN)
@@ -179,28 +173,45 @@ def reservasi_update(request, pk):
 
 
 @require_POST
-@role_required(User.Role.SUPER_ADMIN)
+@login_required
 def reservasi_cancel(request, pk):
-    reservasi = get_object_or_404(Reservasi.objects.select_related("fasilitas", "pemohon"), pk=pk)
-    if reservasi.status not in (Reservasi.Status.PENDING, Reservasi.Status.APPROVED):
+    if request.user.role == User.Role.SUPER_ADMIN:
+        reservasi = get_object_or_404(Reservasi.objects.select_related("fasilitas", "pemohon"), pk=pk)
+        redirect_name = "reservasi_manage"
+    elif request.user.role == User.Role.ADMIN:
+        reservasi = get_object_or_404(Reservasi.objects.select_related("fasilitas", "pemohon"), pk=pk, pemohon=request.user)
+        redirect_name = "reservasi_list"
+    else:
+        messages.error(request, "Anda tidak memiliki akses untuk membatalkan reservasi.")
+        return redirect("dashboard")
+
+    if request.user.role == User.Role.ADMIN and reservasi.status != Reservasi.Status.PENDING:
+        messages.error(request, "Hanya pengajuan dengan status Menunggu Approval yang dapat Anda batalkan.")
+        return redirect(redirect_name)
+
+    if request.user.role == User.Role.SUPER_ADMIN and reservasi.status not in (Reservasi.Status.PENDING, Reservasi.Status.APPROVED):
         messages.error(request, "Hanya reservasi Menunggu Approval atau Disetujui yang dapat dibatalkan.")
-        return redirect("reservasi_manage")
+        return redirect(redirect_name)
+
     now = timezone.localtime()
     if reservasi.tanggal < timezone.localdate() or (reservasi.tanggal == timezone.localdate() and reservasi.jam_mulai <= now.time()):
         messages.error(request, "Reservasi yang sudah dimulai atau telah lewat tidak dapat dibatalkan.")
-        return redirect("reservasi_manage")
+        return redirect(redirect_name)
+
     form = CancelReservasiForm(request.POST)
     if not form.is_valid():
         messages.error(request, "Alasan pembatalan wajib diisi.")
-        return redirect("reservasi_manage")
+        return redirect(redirect_name)
+
     reservasi.status = Reservasi.Status.CANCELLED
     reservasi.alasan_pembatalan = form.cleaned_data["alasan_pembatalan"]
     reservasi.save(update_fields=["status", "alasan_pembatalan", "updated_at"])
     catat_audit(request, "BATAL", "Reservasi", reservasi, f"Membatalkan reservasi {reservasi.fasilitas}; alasan: {reservasi.alasan_pembatalan}")
-    kirim_notifikasi(reservasi.pemohon, "Reservasi dibatalkan", f"Reservasi {reservasi.fasilitas} pada {reservasi.tanggal} dibatalkan oleh Super Admin.")
+    if request.user.role == User.Role.SUPER_ADMIN:
+        kirim_notifikasi(reservasi.pemohon, "Reservasi dibatalkan", f"Reservasi {reservasi.fasilitas} pada {reservasi.tanggal} dibatalkan oleh Super Admin.")
     kirim_ke_atasan("Reservasi dibatalkan", f"{request.user.nama} membatalkan reservasi {reservasi.fasilitas} pada {reservasi.tanggal}.")
     messages.success(request, "Reservasi berhasil dibatalkan.")
-    return redirect("reservasi_manage")
+    return redirect(redirect_name)
 
 
 @role_required(User.Role.SUPER_ADMIN)

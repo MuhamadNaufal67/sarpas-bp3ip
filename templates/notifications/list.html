@@ -1,1 +1,70 @@
-{% extends 'base.html' %}{% block page_title %}Notifikasi{% endblock %}{% block content %}<div class="page-heading"><div><h1>Notifikasi</h1><p>Pesan terbaru terkait aktivitas reservasi Anda.</p></div></div><div class="card table-wrap"><table><tr><th>Judul</th><th>Pesan</th><th>Waktu</th><th>Status</th><th></th></tr>{% for item in notifikasi_list %}<tr{% if not item.status_baca %} style="background:#eef8f6"{% endif %}><td><strong>{{ item.judul }}</strong></td><td>{{ item.pesan }}</td><td>{{ item.created_at|date:'d M Y H.i' }}</td><td>{% if item.status_baca %}Sudah dibaca{% else %}<strong>Belum dibaca</strong>{% endif %}</td><td>{% if not item.status_baca %}<form method="post" action="{% url 'notifikasi_baca' item.pk %}">{% csrf_token %}<button>Tandai dibaca</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="5">Belum ada notifikasi.</td></tr>{% endfor %}</table></div>{% endblock %}
+{% extends 'base.html' %}
+
+{% block page_title %}Notifikasi{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Notifikasi</h1>
+  <p>Pemberitahuan aktivitas, persetujuan, penolakan, atau perbaikan terkait reservasi Anda.</p>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Waktu</th>
+          <th>Judul</th>
+          <th>Pesan</th>
+          <th>Status</th>
+          <th style="text-align: right;">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in notifikasi_list %}
+        <tr {% if not item.status_baca %}style="background: var(--primary-light);"{% endif %}>
+          <td style="white-space: nowrap; color: var(--text-muted); font-size: 13px;">
+            {{ item.created_at|date:'d M Y, H:i' }}
+          </td>
+          <td>
+            <strong>{{ item.judul }}</strong>
+          </td>
+          <td style="color: var(--text);">
+            {{ item.pesan }}
+          </td>
+          <td>
+            {% if item.status_baca %}
+            <span class="badge" style="background: var(--surface-hover); color: var(--text-muted); font-size: 11px;">Sudah dibaca</span>
+            {% else %}
+            <span class="badge badge-pending" style="font-size: 11px;">Belum dibaca</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right; white-space: nowrap;">
+            {% if not item.status_baca %}
+            <form method="post" action="{% url 'notifikasi_baca' item.pk %}" style="display: inline-block;">
+              {% csrf_token %}
+              <button type="submit" class="button secondary" style="padding: 6px 12px; font-size: 12px;">Tandai Dibaca</button>
+            </form>
+            {% else %}
+            <span style="color: var(--text-muted); font-size: 12px;">&mdash;</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+              </div>
+              <div class="empty-state-title">Belum ada notifikasi</div>
+              <div class="empty-state-desc">Pemberitahuan aktivitas sistem akan tercatat di halaman ini.</div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

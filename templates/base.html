@@ -1,4 +1,228 @@
 {% load static %}
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{% block title %}SARPAS BP3IP{% endblock %}</title><style>
-:root{--p:#0d47a1;--d:#082d68;--bg:#f6f8fc;--text:#263238;--line:#dbe3ef;--danger:#b4232c;--ok:#18794e}*{box-sizing:border-box}body{margin:0;background:var(--bg);font:15px Arial,sans-serif;color:var(--text)}.shell{display:flex;min-height:100vh}.sidebar{width:260px;padding:22px 14px;background:linear-gradient(var(--p),var(--d));color:#fff}.brand{display:block;padding:0 12px 22px;margin-bottom:18px;border-bottom:1px solid #ffffff55;color:#fff;font-weight:bold;text-decoration:none;text-align:center}.brand img{display:block;width:70px;max-height:70px;object-fit:contain;margin:0 auto 8px}.nav{display:grid;gap:5px}.nav a,.logout{display:block;width:100%;padding:11px 12px;border:0;border-radius:7px;background:transparent;color:#e6efff;text-align:left;text-decoration:none;font:inherit;cursor:pointer}.nav a:hover,.nav a.active,.logout:hover{background:#ffffff24}.content-area{flex:1}.header{display:flex;justify-content:space-between;align-items:center;padding:16px 36px;background:#fff;border-bottom:1px solid var(--line)}.header h1{margin:0;font-size:21px}.user{color:#667085;text-align:right}.user strong{display:block;color:var(--text)}main{max-width:1320px;margin:auto;padding:30px 36px}.page-heading{margin-bottom:22px}.page-heading h1{margin:0}.page-heading p,.muted{color:#667085}.card,.stat{padding:20px;margin:18px 0;border:1px solid var(--line);border-radius:10px;background:#fff}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.stat b{display:block;color:var(--p);font-size:28px;margin-top:8px}.table-wrap{overflow:auto;padding:0}table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eff5ff;font-size:12px}input,select,textarea{display:block;width:100%;margin-top:5px;padding:9px;border:1px solid #b8c7da;border-radius:6px;font:inherit}label{display:block;margin-top:12px;font-weight:bold}.button,button{display:inline-block;margin:12px 5px 0 0;padding:9px 13px;border:0;border-radius:6px;background:var(--p);color:#fff;text-decoration:none;font:inherit;cursor:pointer}.secondary{background:#667085!important}.danger{background:var(--danger)!important}.ok{background:var(--ok)!important}.message{padding:12px;margin-bottom:12px;border-radius:7px;background:#e8f1ff}.message.error{background:#fdebed}.message.success{background:#e7f6ed}.filter-row{display:flex;gap:12px;align-items:end}.booking{display:block;margin:3px;padding:6px;background:#f9dfe0;color:#8c1f27;border-radius:4px;font-size:12px}.available{color:#8a969e}.legend{margin-bottom:12px;color:#667085}@media(max-width:760px){.shell{display:block}.sidebar{width:100%}.header,main{padding:18px}.stats{grid-template-columns:repeat(2,1fr)}.filter-row{display:block}}
-</style></head><body>{% if user.is_authenticated %}<div class="shell"><aside class="sidebar"><a class="brand" href="{% url 'dashboard' %}"><img src="{% static 'images/LOGO-BP3IP.png' %}" alt="Logo BP3IP">SARPAS BP3IP</a><nav class="nav"><a href="{% url 'dashboard' %}">Dashboard</a>{% if user.role == 'ADMIN' %}<a href="{% url 'reservasi_create' %}">Ajukan Reservasi</a><a href="{% url 'reservasi_list' %}">Reservasi Saya</a>{% elif user.role == 'ATASAN' %}<a href="{% url 'pengajuan_list' %}">Pengajuan Reservasi</a>{% elif user.role == 'SUPER_ADMIN' %}<a href="{% url 'fasilitas_list' %}">Kelola Fasilitas</a><a href="{% url 'reservasi_manage' %}">Kelola Reservasi</a><a href="{% url 'audit_log_list' %}">Audit Log</a>{% endif %}<a href="{% url 'notifikasi_list' %}">Notifikasi{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}</a></nav><form action="{% url 'logout' %}" method="post">{% csrf_token %}<button class="logout" type="submit">Logout</button></form></aside><section class="content-area"><header class="header"><h1>{% block page_title %}SARPAS BP3IP{% endblock %}</h1><div class="user"><strong>{{ user.nama }}</strong>{{ user.get_role_display }}</div></header><main>{% else %}<main>{% endif %}{% for message in messages %}<div class="message {{ message.tags }}">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</main>{% if user.is_authenticated %}</section></div>{% endif %}</body></html>
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SARPAS BP3IP{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <script src="{% static 'js/main.js' %}" defer></script>
+</head>
+<body>
+  {% if user.is_authenticated %}
+  <div class="sidebar-overlay"></div>
+  <div class="shell">
+    <!-- Sidebar Kiri -->
+    <aside class="sidebar" id="main-sidebar">
+      <div class="sidebar-header">
+        <a class="brand" href="{% url 'dashboard' %}">
+          <div class="brand-logo-wrap">
+            <img src="{% static 'images/LOGO_BP3IP.png' %}" alt="Logo BP3IP">
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">SARPAS BP3IP</span>
+            <span class="brand-sub">Kemenhub RI</span>
+          </div>
+        </a>
+        <!-- Sidebar Collapse / Expand Toggle -->
+        <button id="sidebar-collapse-btn"
+                class="sidebar-collapse-btn"
+                aria-label="Tutup sidebar"
+                title="Tutup sidebar">
+          <!-- Chevron Left (expanded state) -->
+          <svg id="sidebar-chevron-left" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          <!-- Chevron Right (collapsed state, hidden by default) -->
+          <svg id="sidebar-chevron-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <nav class="nav">
+        <!-- Dashboard -->
+        <a href="{% url 'dashboard' %}" class="nav-link" data-tooltip="Dashboard">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          </span>
+          <span class="nav-text">Dashboard</span>
+        </a>
+
+        {% if user.role == 'ADMIN' %}
+        <!-- Ajukan Reservasi -->
+        <a href="{% url 'reservasi_create' %}" class="nav-link" data-tooltip="Ajukan Reservasi">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          </span>
+          <span class="nav-text">Ajukan Reservasi</span>
+        </a>
+        <!-- Reservasi Saya -->
+        <a href="{% url 'reservasi_list' %}" class="nav-link" data-tooltip="Reservasi Saya">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+          </span>
+          <span class="nav-text">Reservasi Saya</span>
+        </a>
+
+        {% elif user.role == 'ATASAN' %}
+        <!-- Pengajuan Reservasi -->
+        <a href="{% url 'pengajuan_list' %}" class="nav-link" data-tooltip="Pengajuan Reservasi">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+          </span>
+          <span class="nav-text">Pengajuan Reservasi</span>
+        </a>
+
+        {% elif user.role == 'SUPER_ADMIN' %}
+        <!-- Kelola Fasilitas -->
+        <a href="{% url 'fasilitas_list' %}" class="nav-link" data-tooltip="Kelola Fasilitas">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+          </span>
+          <span class="nav-text">Kelola Fasilitas</span>
+        </a>
+        <!-- Kelola Reservasi -->
+        <a href="{% url 'reservasi_manage' %}" class="nav-link" data-tooltip="Kelola Reservasi">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V9h14v10zm0-12H5V5h14v2z"/></svg>
+          </span>
+          <span class="nav-text">Kelola Reservasi</span>
+        </a>
+        <!-- Audit Log -->
+        <a href="{% url 'audit_log_list' %}" class="nav-link" data-tooltip="Audit Log">
+          <span class="nav-icon">
+            <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+          </span>
+          <span class="nav-text">Audit Log</span>
+        </a>
+        {% endif %}
+      </nav>
+
+      <div class="sidebar-footer">
+        <form action="{% url 'logout' %}" method="post">
+          {% csrf_token %}
+          <button class="logout-btn" type="submit" data-tooltip="Logout">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+            </span>
+            <span class="nav-text">Logout</span>
+          </button>
+        </form>
+      </div>
+    </aside>
+
+    <!-- Area Konten Utama -->
+    <section class="content-area">
+      <header class="header">
+        <div class="header-left">
+          <!-- Mobile Hamburger (only visible on mobile) -->
+          <button id="mobile-menu-toggle" class="btn-icon btn-icon-mobile" aria-label="Buka Menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <h1>{% block page_title %}SARPAS BP3IP{% endblock %}</h1>
+        </div>
+
+        <div class="header-right">
+          <!-- Dark Mode Toggle -->
+          <button id="theme-toggle" class="btn-icon" aria-label="Ganti Tema Tampilan">
+            <span id="theme-icon-container">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </span>
+          </button>
+
+          <!-- Top-Right Notification Bell & Dropdown -->
+          <div class="notification-wrapper">
+            <button id="notification-bell-btn" class="btn-icon notification-bell-btn" aria-label="Notifikasi">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              {% if unread_notification_count %}
+              <span class="notification-badge-dot">{{ unread_notification_count }}</span>
+              {% endif %}
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div id="notification-dropdown" class="notification-dropdown">
+              <div class="dropdown-header">
+                <h4>Notifikasi</h4>
+                {% if unread_notification_count %}
+                <span class="badge badge-pending">{{ unread_notification_count }} baru</span>
+                {% endif %}
+              </div>
+              <div class="dropdown-body">
+                {% for item in user.notifikasi.all|slice:":5" %}
+                <div class="dropdown-item {% if not item.status_baca %}unread{% endif %}">
+                  <div class="dropdown-item-title">{{ item.judul }}</div>
+                  <div class="dropdown-item-desc">{{ item.pesan|truncatechars:80 }}</div>
+                  <div class="dropdown-item-time">{{ item.created_at|date:"d M Y, H:i" }}</div>
+                </div>
+                {% empty %}
+                <div class="empty-state" style="padding: 24px 16px;">
+                  <div class="empty-state-title" style="font-size: 14px;">Belum ada notifikasi</div>
+                  <div class="empty-state-desc" style="font-size: 12px; margin-bottom: 0;">Pemberitahuan aktivitas akan muncul di sini.</div>
+                </div>
+                {% endfor %}
+              </div>
+              <div class="dropdown-footer">
+                <a href="{% url 'notifikasi_list' %}">Lihat Semua Notifikasi &rarr;</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Profile Info -->
+          <div class="user-profile">
+            <div class="user-avatar">
+              {{ user.nama|default:user.username|slice:":1"|upper }}
+            </div>
+            <div class="user-info">
+              <span class="user-name">{{ user.nama|default:user.username }}</span>
+              <span class="user-role">{{ user.get_role_display }}</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main>
+  {% else %}
+  <main>
+  {% endif %}
+
+    <!-- Flash Messages Container -->
+    {% if messages %}
+    <div class="message-container">
+      {% for message in messages %}
+      <div class="message {{ message.tags }}">
+        <span>{{ message }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  {% if user.is_authenticated %}
+    </section>
+  </div>
+
+  <!-- Reusable Confirmation Modal -->
+  <div id="confirm-modal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="confirm-title">Konfirmasi Aksi</h3>
+      </div>
+      <div id="confirm-message" class="modal-body">
+        Apakah Anda yakin ingin melanjutkan tindakan ini?
+      </div>
+      <div class="modal-actions">
+        <button id="confirm-cancel-btn" type="button" class="button secondary">Batal</button>
+        <button id="confirm-submit-btn" type="button" class="button ok">Ya, Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</body>
+</html>

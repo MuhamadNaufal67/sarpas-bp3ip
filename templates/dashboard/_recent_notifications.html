@@ -1,1 +1,30 @@
-<div class="card"><h2>Notifikasi Terbaru</h2><div class="dashboard-notifications">{% for item in notifikasi_terbaru %}<article class="dashboard-notification"><strong>{{ item.judul }}</strong><div>{{ item.pesan }}</div><time>{{ item.created_at|date:'d M Y, H:i' }}{% if not item.status_baca %} · Belum dibaca{% endif %}</time></article>{% empty %}<p class="muted">Belum ada notifikasi.</p>{% endfor %}</div>{% if notifikasi_terbaru %}<a class="button secondary" href="{% url 'notifikasi_list' %}">Lihat semua notifikasi</a>{% endif %}</div>
+<div class="card">
+  <h2>Notifikasi Terbaru</h2>
+  <div class="dashboard-notifications">
+    {% for item in notifikasi_terbaru %}
+    <article class="dropdown-item {% if not item.status_baca %}unread{% endif %}" style="border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; padding: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+        <strong style="color: var(--text);">{{ item.judul }}</strong>
+        <time style="font-size: 11px; color: var(--text-muted);">{{ item.created_at|date:'d M Y, H:i' }}</time>
+      </div>
+      <div style="color: var(--text-muted); font-size: 13px; line-height: 1.4;">{{ item.pesan }}</div>
+      {% if not item.status_baca %}
+      <span class="badge badge-pending" style="font-size: 10px; margin-top: 6px;">Belum dibaca</span>
+      {% endif %}
+    </article>
+    {% empty %}
+    <div class="empty-state">
+      <div class="empty-state-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+      </div>
+      <div class="empty-state-title">Belum ada notifikasi</div>
+      <div class="empty-state-desc">Pemberitahuan aktivitas reservasi Anda akan ditampilkan di sini.</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% if notifikasi_terbaru %}
+  <div style="margin-top: 14px;">
+    <a class="button secondary" href="{% url 'notifikasi_list' %}">Lihat Semua Notifikasi &rarr;</a>
+  </div>
+  {% endif %}
+</div>

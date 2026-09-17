@@ -1,16 +1,92 @@
 <div class="card">
   <h2>Jadwal Reservasi Mingguan</h2>
+
   <form class="filter-row" method="get">
     <label>Fasilitas
-      <select name="fasilitas"><option value="">Semua Fasilitas</option>{% for fasilitas in schedule_facilities %}<option value="{{ fasilitas.pk }}" {% if selected_facility == fasilitas.pk %}selected{% endif %}>{{ fasilitas.nama_fasilitas }}</option>{% endfor %}</select>
+      <select name="fasilitas">
+        <option value="">Semua Fasilitas</option>
+        {% for fasilitas in schedule_facilities %}
+        <option value="{{ fasilitas.pk }}" {% if selected_facility == fasilitas.pk %}selected{% endif %}>
+          {{ fasilitas.nama_fasilitas }}
+        </option>
+        {% endfor %}
+      </select>
     </label>
-    <label>Pilih minggu/tanggal<input type="date" name="minggu" value="{{ week_start|date:'Y-m-d' }}"></label>
-    <button type="submit">Tampilkan</button>
+
+    <label>Pilih minggu/tanggal
+      <input type="date" name="minggu" value="{{ week_start|date:'Y-m-d' }}">
+    </label>
+
+    <button type="submit" class="button">Tampilkan Jadwal</button>
   </form>
-</div>
-<div class="card table-wrap">
-  <div class="legend"><span class="legend-booked">Sudah Dibooking</span><span>Tersedia</span></div>
-  <table class="weekly-schedule"><thead><tr><th>Jam</th>{% for day in schedule.days %}<th>{{ day|date:'D, d M' }}</th>{% endfor %}</tr></thead><tbody>
-  {% for row in schedule.rows %}<tr><th>{{ row.label }}</th>{% for cell in row.cells %}{% if not cell.skip %}<td rowspan="{{ cell.rowspan }}">{% for booking in cell.bookings %}<span class="booking">{{ booking.fasilitas.nama_fasilitas }}<br>{{ booking.jam_mulai|time:'H:i' }} - {{ booking.jam_selesai|time:'H:i' }}<br>Terbooking</span>{% empty %}<span class="available">Tersedia</span>{% endfor %}</td>{% endif %}{% endfor %}</tr>{% endfor %}
-  </tbody></table>
+
+  {% if schedule.out_of_range_bookings %}
+  <div class="out-of-range-banner">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    <div>
+      <strong>Perhatian: Terdapat reservasi disetujui di luar jam operasional standar (07:00 – 18:00):</strong>
+      <ul>
+        {% for booking in schedule.out_of_range_bookings %}
+        <li>
+          <strong>{{ booking.fasilitas.nama_fasilitas }}</strong> &mdash;
+          {{ booking.tanggal|date:"l, d M Y" }} (Pukul {{ booking.jam_mulai|time:"H:i" }} &ndash; {{ booking.jam_selesai|time:"H:i" }})
+          &bull; Keperluan: {{ booking.keperluan }} (Pemohon: {{ booking.pemohon.nama }})
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="schedule-legend">
+    <div class="legend-item">
+      <span class="legend-color booked"></span>
+      <span>Sudah Dibooking (Disetujui)</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-color free"></span>
+      <span>Tersedia</span>
+    </div>
+  </div>
+
+  <div class="table-wrap weekly-schedule-container">
+    <table class="weekly-schedule">
+      <thead>
+        <tr>
+          <th class="schedule-time-col">Jam</th>
+          {% for day in schedule.days %}
+          <th>{{ day|date:'D, d M' }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in schedule.rows %}
+        <tr>
+          <th class="schedule-time-label">{{ row.label }}</th>
+          {% for cell in row.cells %}
+            {% if not cell.skip %}
+            <td rowspan="{{ cell.rowspan }}" class="{% if cell.bookings %}schedule-cell-booked{% else %}schedule-cell-free{% endif %}">
+              {% for booking in cell.bookings %}
+              <div class="booking-card">
+                <div class="booking-card-header">
+                  <strong>{{ booking.fasilitas.nama_fasilitas }}</strong>
+                </div>
+                <div class="booking-card-time">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  {{ booking.jam_mulai|time:'H:i' }} &ndash; {{ booking.jam_selesai|time:'H:i' }}
+                </div>
+                <div class="booking-card-info">{{ booking.keperluan|truncatechars:30 }}</div>
+                <span class="badge badge-approved booking-card-badge">Disetujui</span>
+              </div>
+              {% empty %}
+              <span class="available">Tersedia</span>
+              {% endfor %}
+            </td>
+            {% endif %}
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>

@@ -33,6 +33,7 @@ def get_weekly_schedule(week_start, facility_id=None):
     days = [week_start + timedelta(days=index) for index in range(6)]
     slot_count = (SLOT_END_HOUR - SLOT_START_HOUR) * (60 // SLOT_MINUTES)
     grid = [[{"bookings": [], "rowspan": 1, "skip": False} for _ in days] for _ in range(slot_count)]
+    out_of_range_bookings = []
 
     for item in reservasi:
         day_index = (item.tanggal - week_start).days
@@ -42,6 +43,7 @@ def get_weekly_schedule(week_start, facility_id=None):
             and item.jam_selesai > (datetime.combine(week_start, time(SLOT_START_HOUR)) + timedelta(minutes=index * SLOT_MINUTES)).time()
         ]
         if not affected_slots:
+            out_of_range_bookings.append(item)
             continue
         start_index = affected_slots[0]
         cell = grid[start_index][day_index]
@@ -69,7 +71,7 @@ def get_weekly_schedule(week_start, facility_id=None):
         ), "cells": grid[index]}
         for index in range(slot_count)
     ]
-    return {"days": days, "rows": rows}
+    return {"days": days, "rows": rows, "out_of_range_bookings": out_of_range_bookings}
 
 
 def schedule_context(request):

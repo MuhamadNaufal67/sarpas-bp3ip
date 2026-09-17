@@ -1,1 +1,72 @@
-{% extends 'base.html' %}{% block content %}<h1>Fasilitas</h1><a class="button" href="{% url 'fasilitas_create' %}">Tambah Fasilitas</a><div class="card table-wrap"><table><tr><th>Nama</th><th>Kategori</th><th>Lokasi</th><th>Kapasitas</th><th>Status</th><th></th></tr>{% for fasilitas in fasilitas_list %}<tr><td>{{ fasilitas.nama_fasilitas }}</td><td>{{ fasilitas.get_kategori_display }}</td><td>{{ fasilitas.lokasi }}</td><td>{{ fasilitas.kapasitas }}</td><td>{{ fasilitas.get_status_display }}</td><td><a class="button" href="{% url 'fasilitas_detail' fasilitas.pk %}">Detail</a></td></tr>{% empty %}<tr><td colspan="6">Belum ada fasilitas.</td></tr>{% endfor %}</table></div>{% endblock %}
+{% extends 'base.html' %}
+
+{% block page_title %}Kelola Fasilitas{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Kelola Fasilitas</h1>
+  <p>Daftar seluruh ruangan, kelas, laboratorium simulator, dan fasilitas BP3IP.</p>
+</div>
+
+<div class="page-actions">
+  <a class="button" href="{% url 'fasilitas_create' %}">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    Tambah Fasilitas Baru
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nama Fasilitas</th>
+          <th>Kategori</th>
+          <th>Lokasi</th>
+          <th>Kapasitas</th>
+          <th>Status</th>
+          <th style="text-align: right;">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fasilitas in fasilitas_list %}
+        <tr>
+          <td>
+            <strong>{{ fasilitas.nama_fasilitas }}</strong>
+            {% if fasilitas.deskripsi %}
+            <div style="font-size: 12px; color: var(--text-muted);">{{ fasilitas.deskripsi|truncatechars:60 }}</div>
+            {% endif %}
+          </td>
+          <td>{{ fasilitas.get_kategori_display }}</td>
+          <td>{{ fasilitas.lokasi }}</td>
+          <td>{{ fasilitas.kapasitas }} orang</td>
+          <td>
+            {% if fasilitas.status == 'AKTIF' %}
+            <span class="badge badge-aktif">Aktif</span>
+            {% else %}
+            <span class="badge badge-nonaktif">Nonaktif</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <a class="button secondary" style="padding: 6px 14px; font-size: 13px;" href="{% url 'fasilitas_detail' fasilitas.pk %}">Detail</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+              </div>
+              <div class="empty-state-title">Belum ada fasilitas</div>
+              <div class="empty-state-desc">Tambahkan data fasilitas ruangan atau laboratorium baru untuk memulai.</div>
+              <a class="button" href="{% url 'fasilitas_create' %}">Tambah Fasilitas Sekarang</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,1 +1,46 @@
-{% extends 'base.html' %}{% block page_title %}Dashboard Super Admin{% endblock %}{% block content %}<div class="page-heading"><h1>Dashboard Super Admin</h1><p>Kontrol fasilitas, reservasi, dan jejak audit sistem.</p></div><div class="stats"><div class="stat">Total Reservasi<b>{{ total }}</b></div><div class="stat">Menunggu Approval<b>{{ pending }}</b></div><div class="stat">Disetujui<b>{{ approved }}</b></div><div class="stat">Ditolak<b>{{ rejected }}</b></div><div class="stat">Hari Ini<b>{{ hari_ini }}</b></div></div><a class="button" href="{% url 'fasilitas_list' %}">Kelola Fasilitas</a><a class="button secondary" href="{% url 'reservasi_manage' %}">Kelola Reservasi</a><a class="button secondary" href="{% url 'audit_log_list' %}">Audit Log</a>{% include 'dashboard/_weekly_schedule.html' %}{% include 'dashboard/_recent_notifications.html' %}{% endblock %}
+{% extends 'base.html' %}
+
+{% block page_title %}Dashboard Super Admin{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Dashboard Super Admin</h1>
+  <p>Panel kontrol utama pengelolaan sarana prasarana, seluruh reservasi, dan jejak audit sistem.</p>
+</div>
+
+<div class="page-actions">
+  <a class="button" href="{% url 'fasilitas_create' %}">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    Tambah Fasilitas
+  </a>
+  <a class="button secondary" href="{% url 'fasilitas_list' %}">Kelola Fasilitas</a>
+  <a class="button secondary" href="{% url 'reservasi_manage' %}">Kelola Semua Reservasi</a>
+  <a class="button secondary" href="{% url 'audit_log_list' %}">Audit Log</a>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <span class="stat-label">Total Reservasi</span>
+    <b>{{ total }}</b>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Menunggu Approval</span>
+    <b style="color: var(--warning);">{{ pending }}</b>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Disetujui</span>
+    <b style="color: var(--success);">{{ approved }}</b>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Ditolak</span>
+    <b style="color: var(--danger);">{{ rejected }}</b>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Reservasi Hari Ini</span>
+    <b style="color: var(--primary);">{{ hari_ini }}</b>
+  </div>
+</div>
+
+{% include 'dashboard/_weekly_schedule.html' %}
+{% include 'dashboard/_recent_notifications.html' %}
+{% endblock %}

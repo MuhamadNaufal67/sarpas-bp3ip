@@ -1,1 +1,70 @@
-{% extends 'base.html' %}{% block page_title %}Audit Log{% endblock %}{% block content %}<div class="page-heading"><h1>Audit Log</h1><p>200 aktivitas sistem terbaru.</p></div><div class="card table-wrap"><table><tr><th>Waktu</th><th>Pengguna</th><th>Aksi</th><th>Entitas</th><th>Detail</th></tr>{% for log in logs %}<tr><td>{{ log.created_at|date:'d M Y H.i' }}</td><td>{{ log.actor|default:'Sistem' }}</td><td>{{ log.aksi }}</td><td>{{ log.entitas }}{% if log.entitas_id %} #{{ log.entitas_id }}{% endif %}</td><td>{{ log.detail }}</td></tr>{% empty %}<tr><td colspan="5">Belum ada aktivitas tercatat.</td></tr>{% endfor %}</table></div>{% endblock %}
+{% extends 'base.html' %}
+
+{% block page_title %}Audit Log Aktivitas{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Audit Log Aktivitas</h1>
+  <p>Rekaman 200 aktivitas sistem terbaru yang dilakukan oleh pengguna.</p>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Waktu</th>
+          <th>Pengguna</th>
+          <th>Aksi</th>
+          <th>Entitas</th>
+          <th>Detail Aktivitas</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td style="white-space: nowrap; color: var(--text-muted); font-size: 13px;">
+            {{ log.created_at|date:'d M Y, H:i' }}
+          </td>
+          <td>
+            <strong>{{ log.actor.nama|default:log.actor.username|default:'Sistem Otomatis' }}</strong>
+          </td>
+          <td>
+            {% if log.aksi == 'SETUJUI' %}
+            <span class="badge badge-approved">{{ log.aksi }}</span>
+            {% elif log.aksi == 'TOLAK' or log.aksi == 'HAPUS' or log.aksi == 'BATAL' %}
+            <span class="badge badge-rejected">{{ log.aksi }}</span>
+            {% elif log.aksi == 'TAMBAH' or log.aksi == 'AJUKAN' %}
+            <span class="badge badge-pending">{{ log.aksi }}</span>
+            {% else %}
+            <span class="badge" style="background: var(--surface-hover); color: var(--text-muted);">{{ log.aksi }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <strong>{{ log.entitas }}</strong>
+            {% if log.entitas_id %}
+            <span style="color: var(--text-muted); font-size: 12px;">#{{ log.entitas_id }}</span>
+            {% endif %}
+          </td>
+          <td style="color: var(--text);">
+            {{ log.detail }}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+              </div>
+              <div class="empty-state-title">Belum ada log aktivitas</div>
+              <div class="empty-state-desc">Setiap penambahan, pengajuan, persetujuan, dan perubahan sistem akan terekam di sini.</div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

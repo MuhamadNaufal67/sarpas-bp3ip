@@ -1,3 +1,89 @@
-{% extends 'base.html' %}{% block page_title %}Dashboard{% endblock %}{% block content %}
-<div class="page-heading"><div><h1>Dashboard Atasan</h1><p>Ringkasan pengajuan reservasi yang memerlukan perhatian.</p></div></div><div class="stats"><div class="stat">Menunggu Approval<b>{{ pending }}</b></div><div class="stat">Disetujui<b>{{ approved }}</b></div><div class="stat">Ditolak<b>{{ rejected }}</b></div></div>{% include 'dashboard/_weekly_schedule.html' %}<div class="card table-wrap"><h2>Pengajuan Terbaru</h2><table><tr><th>Pemohon</th><th>Fasilitas</th><th>Tanggal</th><th>Status</th><th></th></tr>{% for item in pengajuan_terbaru %}<tr><td>{{ item.pemohon }}</td><td>{{ item.fasilitas }}</td><td>{{ item.tanggal|date:'d M Y' }}</td><td>{{ item.get_status_display }}</td><td><a class="button" href="{% url 'pengajuan_detail' item.pk %}">Detail</a></td></tr>{% empty %}<tr><td colspan="5">Belum ada pengajuan.</td></tr>{% endfor %}</table></div>{% include 'dashboard/_recent_notifications.html' %}
+{% extends 'base.html' %}
+
+{% block page_title %}Dashboard Atasan{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Dashboard Atasan</h1>
+  <p>Ringkasan pengajuan reservasi fasilitas yang memerlukan verifikasi dan persetujuan.</p>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <span class="stat-label">Menunggu Approval</span>
+    <b style="color: var(--warning);">{{ pending }}</b>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Disetujui</span>
+    <b style="color: var(--success);">{{ approved }}</b>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Ditolak</span>
+    <b style="color: var(--danger);">{{ rejected }}</b>
+  </div>
+</div>
+
+{% include 'dashboard/_weekly_schedule.html' %}
+
+<div class="card">
+  <h2>Pengajuan Terbaru</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Pemohon</th>
+          <th>Fasilitas</th>
+          <th>Tanggal</th>
+          <th>Jam</th>
+          <th>Status</th>
+          <th style="text-align: right;">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in pengajuan_terbaru %}
+        <tr>
+          <td>
+            <strong>{{ item.pemohon.nama|default:item.pemohon.username }}</strong>
+          </td>
+          <td>{{ item.fasilitas.nama_fasilitas }}</td>
+          <td>{{ item.tanggal|date:'d M Y' }}</td>
+          <td>{{ item.jam_mulai|time:'H:i' }} &ndash; {{ item.jam_selesai|time:'H:i' }}</td>
+          <td>
+            {% if item.status == 'PENDING' %}
+            <span class="badge badge-pending">{{ item.get_status_display }}</span>
+            {% elif item.status == 'APPROVED' %}
+            <span class="badge badge-approved">{{ item.get_status_display }}</span>
+            {% elif item.status == 'REJECTED' %}
+            <span class="badge badge-rejected">{{ item.get_status_display }}</span>
+            {% elif item.status == 'NEEDS_REVISION' %}
+            <span class="badge badge-revision">{{ item.get_status_display }}</span>
+            {% elif item.status == 'CANCELLED' %}
+            <span class="badge badge-cancelled">{{ item.get_status_display }}</span>
+            {% else %}
+            <span class="badge badge-draft">{{ item.get_status_display }}</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <a class="button secondary" style="padding: 6px 14px; font-size: 13px;" href="{% url 'pengajuan_detail' item.pk %}">Detail</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+              </div>
+              <div class="empty-state-title">Belum ada pengajuan reservasi</div>
+              <div class="empty-state-desc">Pengajuan yang masuk dari admin akan ditampilkan di sini untuk ditinjau.</div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include 'dashboard/_recent_notifications.html' %}
 {% endblock %}

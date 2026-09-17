@@ -1,1 +1,71 @@
-{% extends 'base.html' %}{% block content %}<div class="card"><h1>{{ fasilitas.nama_fasilitas }}</h1><p><b>Kategori:</b> {{ fasilitas.get_kategori_display }}</p><p><b>Lokasi:</b> {{ fasilitas.lokasi }}</p><p><b>Kapasitas:</b> {{ fasilitas.kapasitas }}</p><p><b>Status:</b> {{ fasilitas.get_status_display }}</p><p><b>Deskripsi:</b><br>{{ fasilitas.deskripsi|default:'-' }}</p><p><b>Keterangan tambahan:</b><br>{{ fasilitas.keterangan_tambahan|default:'-' }}</p><a class="button" href="{% url 'fasilitas_update' fasilitas.pk %}">Edit</a><form class="inline" method="post" action="{% url 'fasilitas_delete' fasilitas.pk %}">{% csrf_token %}<button class="danger" onclick="return confirm('Hapus fasilitas ini?')">Hapus</button></form><a class="button secondary" href="{% url 'fasilitas_list' %}">Kembali</a></div>{% endblock %}
+{% extends 'base.html' %}
+
+{% block page_title %}{{ fasilitas.nama_fasilitas }}{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>{{ fasilitas.nama_fasilitas }}</h1>
+  <p>Rincian data sarana prasarana BP3IP.</p>
+</div>
+
+<div class="card" style="max-width: 760px;">
+  <table style="margin: 0 0 24px 0;">
+    <tbody>
+      <tr>
+        <td style="width: 180px; font-weight: 600; color: var(--text-muted);">Nama Fasilitas</td>
+        <td><strong>{{ fasilitas.nama_fasilitas }}</strong></td>
+      </tr>
+      <tr>
+        <td style="font-weight: 600; color: var(--text-muted);">Kategori</td>
+        <td>{{ fasilitas.get_kategori_display }}</td>
+      </tr>
+      <tr>
+        <td style="font-weight: 600; color: var(--text-muted);">Lokasi</td>
+        <td>{{ fasilitas.lokasi }}</td>
+      </tr>
+      <tr>
+        <td style="font-weight: 600; color: var(--text-muted);">Kapasitas</td>
+        <td><strong>{{ fasilitas.kapasitas }}</strong> orang</td>
+      </tr>
+      <tr>
+        <td style="font-weight: 600; color: var(--text-muted);">Status</td>
+        <td>
+          {% if fasilitas.status == 'AKTIF' %}
+          <span class="badge badge-aktif">Aktif</span>
+          {% else %}
+          <span class="badge badge-nonaktif">Nonaktif</span>
+          {% endif %}
+        </td>
+      </tr>
+      <tr>
+        <td style="font-weight: 600; color: var(--text-muted);">Deskripsi</td>
+        <td>{{ fasilitas.deskripsi|default:'-'|linebreaks }}</td>
+      </tr>
+      <tr>
+        <td style="font-weight: 600; color: var(--text-muted);">Keterangan Tambahan</td>
+        <td>{{ fasilitas.keterangan_tambahan|default:'-'|linebreaks }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="form-actions" style="margin-top: 0;">
+    <a class="button" href="{% url 'fasilitas_update' fasilitas.pk %}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+      Edit Fasilitas
+    </a>
+
+    <!-- Form Hapus dengan Modal Konfirmasi -->
+    <form method="post" action="{% url 'fasilitas_delete' fasilitas.pk %}"
+          data-confirm="Apakah Anda yakin ingin <strong>menghapus</strong> fasilitas '{{ fasilitas.nama_fasilitas }}'?<br><br><span style='color: var(--danger-text); font-size: 13px;'>Tindakan ini tidak dapat dibatalkan. Catatan: fasilitas tidak dapat dihapus jika sudah memiliki riwayat reservasi.</span>"
+          data-confirm-title="Konfirmasi Hapus Fasilitas"
+          data-confirm-btn-class="button danger"
+          data-confirm-btn-text="Ya, Hapus Fasilitas"
+          style="display: inline-block;">
+      {% csrf_token %}
+      <button type="submit" class="button danger">Hapus Fasilitas</button>
+    </form>
+
+    <a class="button secondary" href="{% url 'fasilitas_list' %}">&larr; Kembali</a>
+  </div>
+</div>
+{% endblock %}

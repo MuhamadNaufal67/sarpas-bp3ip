@@ -1,6 +1,47 @@
-{% extends 'base.html' %}{% block page_title %}Dashboard{% endblock %}{% block content %}
-<div class="page-heading"><h1>Dashboard {{ user.get_role_display }}</h1><p>Ringkasan reservasi dan jadwal fasilitas BP3IP.</p></div>
-{% if user.role == 'OPERATOR' %}<a class="button" href="{% url 'fasilitas_list' %}">Kelola Fasilitas</a>{% else %}<a class="button" href="{% url 'reservasi_create' %}">Ajukan Reservasi</a><a class="button secondary" href="{% url 'reservasi_list' %}">Reservasi Saya</a>{% endif %}
-<div class="stats"><div class="stat">Total Reservasi<b>{{ total }}</b></div><div class="stat">Menunggu Approval<b>{{ pending }}</b></div><div class="stat">Disetujui<b>{{ approved }}</b></div><div class="stat">Ditolak<b>{{ rejected }}</b></div><div class="stat">Reservasi Hari Ini<b>{{ hari_ini }}</b></div></div>
-{% include 'dashboard/_weekly_schedule.html' %}{% include 'dashboard/_recent_notifications.html' %}
+{% extends 'base.html' %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Dashboard {{ user.get_role_display }}</h1>
+  <p>Selamat datang di SARPAS BP3IP. Ringkasan pengajuan reservasi dan ketersediaan sarana prasarana.</p>
+</div>
+
+<div class="page-actions">
+  <a class="button" href="{% url 'reservasi_create' %}">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    Ajukan Reservasi Baru
+  </a>
+  <a class="button secondary" href="{% url 'reservasi_list' %}">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
+    Reservasi Saya
+  </a>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <span class="stat-label">Total Reservasi</span>
+    <b>{{ total }}</b>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Menunggu Approval</span>
+    <b style="color: var(--warning);">{{ pending }}</b>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Disetujui</span>
+    <b style="color: var(--success);">{{ approved }}</b>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Ditolak</span>
+    <b style="color: var(--danger);">{{ rejected }}</b>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Reservasi Hari Ini</span>
+    <b style="color: var(--primary);">{{ hari_ini }}</b>
+  </div>
+</div>
+
+{% include 'dashboard/_weekly_schedule.html' %}
+{% include 'dashboard/_recent_notifications.html' %}
 {% endblock %}

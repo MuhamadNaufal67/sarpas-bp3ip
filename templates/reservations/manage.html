@@ -1,1 +1,97 @@
-{% extends 'base.html' %}{% block content %}<h1>Kelola Reservasi</h1><div class="card table-wrap"><table><tr><th>Pemohon</th><th>Fasilitas</th><th>Waktu</th><th>Status</th><th>Aksi</th></tr>{% for item in reservasi_list %}<tr><td>{{ item.pemohon.nama }}</td><td>{{ item.fasilitas }}</td><td>{{ item.tanggal|date:'d M Y' }}<br>{{ item.jam_mulai|time:'H.i' }}&ndash;{{ item.jam_selesai|time:'H.i' }}</td><td>{{ item.get_status_display }}</td><td>{% if item.status == 'PENDING' or item.status == 'APPROVED' %}<details><summary>Batalkan</summary><form method="post" action="{% url 'reservasi_cancel' item.pk %}">{% csrf_token %}<label>Alasan pembatalan<textarea name="alasan_pembatalan" rows="2" required></textarea></label><button class="danger" type="submit">Konfirmasi batal</button></form></details>{% else %}-{% endif %}</td></tr>{% empty %}<tr><td colspan="5">Belum ada reservasi.</td></tr>{% endfor %}</table></div>{% endblock %}
+{% extends 'base.html' %}
+
+{% block page_title %}Kelola Semua Reservasi{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Kelola Semua Reservasi</h1>
+  <p>Panel pengelolaan seluruh reservasi fasilitas BP3IP oleh Super Admin.</p>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Pemohon</th>
+          <th>Fasilitas</th>
+          <th>Waktu &amp; Jadwal</th>
+          <th>Status</th>
+          <th style="text-align: right;">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in reservasi_list %}
+        <tr>
+          <td>
+            <strong>{{ item.pemohon.nama|default:item.pemohon.username }}</strong>
+            <div style="font-size: 12px; color: var(--text-muted);">{{ item.pemohon.email }}</div>
+          </td>
+          <td>
+            <strong>{{ item.fasilitas.nama_fasilitas }}</strong>
+            <div style="font-size: 12px; color: var(--text-muted);">{{ item.fasilitas.lokasi }}</div>
+          </td>
+          <td>
+            {{ item.tanggal|date:'d M Y' }}<br>
+            <span style="color: var(--text-muted); font-size: 13px;">{{ item.jam_mulai|time:'H:i' }} &ndash; {{ item.jam_selesai|time:'H:i' }}</span>
+          </td>
+          <td>
+            {% if item.status == 'PENDING' %}
+            <span class="badge badge-pending">{{ item.get_status_display }}</span>
+            {% elif item.status == 'APPROVED' %}
+            <span class="badge badge-approved">{{ item.get_status_display }}</span>
+            {% elif item.status == 'REJECTED' %}
+            <span class="badge badge-rejected">{{ item.get_status_display }}</span>
+            {% elif item.status == 'NEEDS_REVISION' %}
+            <span class="badge badge-revision">{{ item.get_status_display }}</span>
+            {% elif item.status == 'CANCELLED' %}
+            <span class="badge badge-cancelled">{{ item.get_status_display }}</span>
+            {% else %}
+            <span class="badge badge-draft">{{ item.get_status_display }}</span>
+            {% endif %}
+
+            {% if item.alasan_pembatalan %}
+            <div style="margin-top: 4px; font-size: 12px; color: var(--text-muted);">
+              <small>Batal: {{ item.alasan_pembatalan }}</small>
+            </div>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            {% if item.status == 'PENDING' or item.status == 'APPROVED' %}
+            <details style="display: inline-block; text-align: left;">
+              <summary class="button danger" style="padding: 6px 12px; font-size: 12px; cursor: pointer;">Batalkan</summary>
+              <div style="position: absolute; right: 24px; background: var(--surface); border: 1px solid var(--border); padding: 14px; border-radius: var(--radius); box-shadow: var(--shadow-lg); z-index: 50; width: 280px; margin-top: 6px;">
+                <form method="post" action="{% url 'reservasi_cancel' item.pk %}">
+                  {% csrf_token %}
+                  <label style="margin-top: 0; font-size: 12px;">Alasan Pembatalan:
+                    <textarea name="alasan_pembatalan" rows="2" placeholder="Wajib diisi..." required style="font-size: 12px; margin-top: 4px;"></textarea>
+                  </label>
+                  <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button class="button danger" type="submit" style="padding: 6px 10px; font-size: 12px; width: 100%;">Konfirmasi Batal</button>
+                  </div>
+                </form>
+              </div>
+            </details>
+            {% else %}
+            <span style="color: var(--text-muted);">&mdash;</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V9h14v10zm0-12H5V5h14v2z"/></svg>
+              </div>
+              <div class="empty-state-title">Belum ada data reservasi</div>
+              <div class="empty-state-desc">Belum ada reservasi sarana dan prasarana yang tercatat di sistem.</div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
