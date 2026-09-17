@@ -201,14 +201,25 @@ a:hover {
   white-space: nowrap;
 }
 
-.brand img {
+.brand-logo-wrap {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand img,
+.brand-logo-wrap img {
   width: 40px;
   height: 40px;
   object-fit: contain;
-  border-radius: var(--radius-sm);
-  background: #ffffff;
-  padding: 3px;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
   flex-shrink: 0;
+  filter: brightness(1.2) drop-shadow(0 0 1px rgba(120, 180, 255, 0.5));
 }
 
 .brand-text {
@@ -219,8 +230,9 @@ a:hover {
 }
 
 .brand-title {
-  font-size: 16px;
+  font-size: 15px;
   letter-spacing: 0.5px;
+  color: #93c5fd;
 }
 
 .brand-sub {
@@ -920,29 +932,89 @@ tbody tr:hover {
 }
 
 .weekly-schedule td {
-  padding: 6px;
+  padding: 0;
   border: 1px solid var(--border);
   vertical-align: top;
   height: 52px;
   text-align: center;
+  position: relative;
 }
 
 .weekly-schedule td:hover {
   background: transparent;
 }
 
-.booking {
-  display: block;
-  margin: 2px 0;
+/* --- Booked cell: fill entire cell red --- */
+.schedule-cell-booked {
+  background: var(--danger-bg) !important;
+  padding: 0 !important;
+}
+
+.schedule-cell-free {
+  padding: 6px !important;
+}
+
+/* Booking Card (fills the entire td) */
+.booking-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100%;
+  width: 100%;
   padding: 8px 10px;
   background: var(--danger-bg);
   color: var(--danger-text);
-  border: 1px solid var(--danger-border);
-  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--danger);
   font-size: 12px;
   text-align: left;
-  box-shadow: var(--shadow-sm);
+  line-height: 1.35;
+  gap: 3px;
+}
+
+.booking-card-header strong {
+  font-size: 12px;
+  font-weight: 700;
+  display: block;
+}
+
+.booking-card-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--danger-text);
+  opacity: 0.85;
+}
+
+.booking-card-info {
+  font-size: 11px;
+  color: var(--danger-text);
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.booking-card-badge {
+  margin-top: 2px;
+  font-size: 10px !important;
+  padding: 1px 6px !important;
+}
+
+/* Legacy .booking class (kept for backwards compat) */
+.booking {
+  display: block;
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border-left: 3px solid var(--danger);
+  font-size: 12px;
+  text-align: left;
   line-height: 1.3;
+  height: 100%;
 }
 
 .booking strong {
@@ -955,6 +1027,28 @@ tbody tr:hover {
   color: var(--text-muted);
   font-size: 12px;
   opacity: 0.7;
+}
+
+/* Schedule Legend */
+.schedule-legend {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.schedule-time-col {
+  width: 110px;
+}
+
+.schedule-time-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  text-align: center !important;
 }
 
 .legend {
@@ -1413,40 +1507,9 @@ button.success:hover {
     position: relative;
   }
 
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: -280px;
-    height: 100vh;
-    z-index: 100;
-    /* On mobile, show as full-width drawer */
-    width: var(--sidebar-width) !important;
-    min-width: var(--sidebar-width) !important;
-  }
-
-  .sidebar.mobile-open {
-    left: 0;
-  }
-
-  .sidebar.mobile-open .brand-text,
-  .sidebar.mobile-open .nav-text {
-    display: block !important;
-    opacity: 1 !important;
-  }
-
-  .sidebar.mobile-open .sidebar-header {
-    flex-direction: row !important;
-    padding: 14px 12px !important;
-  }
-
   /* Show mobile hamburger on mobile */
   .btn-icon-mobile {
     display: flex !important;
-  }
-
-  /* Hide sidebar collapse button on mobile */
-  .sidebar-collapse-btn {
-    display: none;
   }
 
   .header {
@@ -1875,5 +1938,232 @@ button.success:hover {
 
   .login-title {
     font-size: 20px;
+  }
+}
+
+/* ============================================================
+   RESERVASI FORM PAGE — Centered Layout
+   ============================================================ */
+.reservasi-form-page {
+  max-width: 100%;
+}
+
+.reservasi-form-center {
+  display: flex;
+  justify-content: center;
+  padding: 0;
+}
+
+.reservasi-card {
+  max-width: 620px;
+  width: 100%;
+}
+
+/* Info Box */
+.reservasi-info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--info-bg);
+  color: var(--info-text);
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+  font-size: 13px;
+  line-height: 1.5;
+  position: relative;
+}
+
+.reservasi-info-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.reservasi-info-content ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.reservasi-info-content li {
+  margin-bottom: 2px;
+}
+
+.reservasi-info-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: var(--info-text);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.reservasi-info-close:hover {
+  opacity: 1;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Form Fields */
+.form-field {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+  margin-top: 0;
+}
+
+.form-label-opt {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.required-star {
+  color: var(--danger);
+}
+
+.field-has-error input,
+.field-has-error select,
+.field-has-error textarea {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.field-error-msg {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--danger-text);
+  font-weight: 500;
+}
+
+/* Side-by-side jam select */
+.form-field-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-field-row .form-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.jam-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.jam-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* ============================================================
+   RESPONSIVE SIDEBAR — Floating Card Style (Mobile)
+   ============================================================ */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    top: 12px;
+    left: -300px;
+    height: calc(100vh - 24px);
+    width: 260px !important;
+    min-width: 260px !important;
+    z-index: 200;
+    border-radius: var(--radius-lg);
+    border-right: none;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+
+  .sidebar.mobile-open {
+    left: 12px;
+  }
+
+  .sidebar.mobile-open .brand-text,
+  .sidebar.mobile-open .nav-text {
+    display: block !important;
+    opacity: 1 !important;
+  }
+
+  .sidebar.mobile-open .sidebar-header {
+    flex-direction: row !important;
+    padding: 14px 12px !important;
+  }
+
+  /* Floating overlay */
+  .sidebar-overlay {
+    z-index: 190;
+  }
+
+  .sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+  }
+
+  /* Sidebar header rounded top */
+  .sidebar.mobile-open .sidebar-header {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  /* Collapse button hidden on mobile */
+  .sidebar-collapse-btn {
+    display: none !important;
+  }
+
+  /* Nav items on mobile have subtle padding */
+  .sidebar .nav {
+    padding: 12px 8px;
+  }
+
+  .sidebar .nav-link,
+  .sidebar .nav a {
+    border-radius: var(--radius);
+    padding: 10px 12px;
+  }
+
+  .sidebar .nav-link.active,
+  .sidebar .nav a.active {
+    background: var(--sidebar-active);
+    box-shadow: 0 2px 8px rgba(21, 94, 239, 0.3);
+  }
+
+  /* Footer inside rounded sidebar */
+  .sidebar .sidebar-footer {
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  }
+}
+
+@media (max-width: 600px) {
+  /* Form side by side becomes stacked */
+  .form-field-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .reservasi-card {
+    padding: 18px 16px;
   }
 }
