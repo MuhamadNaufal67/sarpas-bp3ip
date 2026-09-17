@@ -15,11 +15,42 @@
   </a>
 </div>
 
+<!-- Form Pencarian -->
+<div class="card" style="margin-bottom: 16px; padding: 16px 20px;">
+  <form method="get" action="" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 220px;">
+      <label style="font-size: 13px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;" for="id-search-reservasi">Cari Reservasi</label>
+      <input
+        id="id-search-reservasi"
+        type="text"
+        name="q"
+        value="{{ q }}"
+        placeholder="Kode reservasi, fasilitas, status, keperluan..."
+        style="width: 100%; margin: 0;"
+      >
+    </div>
+    <button type="submit" class="button" style="padding: 10px 20px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 6px;"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      Cari
+    </button>
+    {% if q %}
+    <a class="button secondary" href="{% url 'reservasi_list' %}" style="padding: 10px 16px;">Reset</a>
+    {% endif %}
+  </form>
+  {% if q %}
+  <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted);">
+    Menampilkan hasil pencarian untuk: <strong>"{{ q }}"</strong>
+    &mdash; {{ page_obj.paginator.count }} reservasi ditemukan.
+  </div>
+  {% endif %}
+</div>
+
 <div class="card">
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
+          <th>ID Reservasi</th>
           <th>Fasilitas</th>
           <th>Tanggal</th>
           <th>Jam</th>
@@ -31,6 +62,13 @@
       <tbody>
         {% for item in reservasi_list %}
         <tr>
+          <td>
+            {% if item.kode_reservasi %}
+            <span style="font-family: monospace; font-weight: 600; font-size: 13px; color: var(--primary);">{{ item.kode_reservasi }}</span>
+            {% else %}
+            <span style="color: var(--text-muted); font-size: 12px;">&mdash;</span>
+            {% endif %}
+          </td>
           <td>
             <strong>{{ item.fasilitas.nama_fasilitas }}</strong>
             <div style="font-size: 12px; color: var(--text-muted);">{{ item.fasilitas.lokasi }}</div>
@@ -90,14 +128,20 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6">
+          <td colspan="7">
             <div class="empty-state">
               <div class="empty-state-icon">
                 <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
               </div>
-              <div class="empty-state-title">Belum ada reservasi</div>
-              <div class="empty-state-desc">Anda belum pernah mengajukan reservasi sarana dan prasarana.</div>
+              <div class="empty-state-title">
+                {% if q %}Tidak ada reservasi yang cocok dengan "{{ q }}"{% else %}Belum ada reservasi{% endif %}
+              </div>
+              <div class="empty-state-desc">
+                {% if q %}Coba kata kunci lain atau <a href="{% url 'reservasi_list' %}">tampilkan semua reservasi</a>.{% else %}Anda belum pernah mengajukan reservasi sarana dan prasarana.{% endif %}
+              </div>
+              {% if not q %}
               <a class="button" href="{% url 'reservasi_create' %}">Ajukan Reservasi Sekarang</a>
+              {% endif %}
             </div>
           </td>
         </tr>
@@ -105,5 +149,39 @@
       </tbody>
     </table>
   </div>
+
+  <!-- Navigasi Pagination -->
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0 4px; flex-wrap: wrap; gap: 8px;">
+    <div style="font-size: 13px; color: var(--text-muted);">
+      Halaman {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}
+      &mdash; Total {{ page_obj.paginator.count }} reservasi
+    </div>
+    <div style="display: flex; gap: 6px; align-items: center;">
+      {% if page_obj.has_previous %}
+      <a class="button secondary" style="padding: 6px 14px; font-size: 13px;"
+         href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.previous_page_number }}">&larr; Sebelumnya</a>
+      {% else %}
+      <span class="button secondary" style="padding: 6px 14px; font-size: 13px; opacity: 0.4; cursor: not-allowed;">&larr; Sebelumnya</span>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+        <span class="button" style="padding: 6px 12px; font-size: 13px;">{{ num }}</span>
+        {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+        <a class="button secondary" style="padding: 6px 12px; font-size: 13px;"
+           href="?{% if q %}q={{ q }}&{% endif %}page={{ num }}">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+      <a class="button secondary" style="padding: 6px 14px; font-size: 13px;"
+         href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.next_page_number }}">Berikutnya &rarr;</a>
+      {% else %}
+      <span class="button secondary" style="padding: 6px 14px; font-size: 13px; opacity: 0.4; cursor: not-allowed;">Berikutnya &rarr;</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Tambah Akun Admin{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Tambah Akun Admin</h1>
+  <p>Buat kredensial akun baru dengan role Admin untuk staf BP3IP.</p>
+</div>
+
+<div class="card" style="max-width: 620px;">
+  <form method="post" autocomplete="off">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="message error" style="margin-bottom: 18px;">
+      {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <!-- Username -->
+    <div style="margin-bottom: 18px;">
+      <label for="{{ form.username.id_for_label }}">
+        Username <span style="color: var(--danger);">*</span>
+      </label>
+      {{ form.username }}
+      {% if form.username.help_text %}
+      <small style="color: var(--text-muted); display: block; margin-top: 4px;">{{ form.username.help_text }}</small>
+      {% endif %}
+      {% if form.username.errors %}
+      <ul class="errorlist">
+        {% for error in form.username.errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+
+    <!-- Nama Lengkap -->
+    <div style="margin-bottom: 18px;">
+      <label for="{{ form.nama.id_for_label }}">
+        Nama Lengkap <span style="color: var(--danger);">*</span>
+      </label>
+      {{ form.nama }}
+      {% if form.nama.errors %}
+      <ul class="errorlist">
+        {% for error in form.nama.errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+
+    <!-- Email -->
+    <div style="margin-bottom: 18px;">
+      <label for="{{ form.email.id_for_label }}">
+        Alamat Email <span style="color: var(--danger);">*</span>
+      </label>
+      {{ form.email }}
+      {% if form.email.errors %}
+      <ul class="errorlist">
+        {% for error in form.email.errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+
+    <!-- Password -->
+    <div style="margin-bottom: 18px;">
+      <label for="{{ form.password1.id_for_label }}">
+        Password <span style="color: var(--danger);">*</span>
+      </label>
+      {{ form.password1 }}
+      {% if form.password1.help_text %}
+      <small style="color: var(--text-muted); display: block; margin-top: 4px;">{{ form.password1.help_text }}</small>
+      {% endif %}
+      {% if form.password1.errors %}
+      <ul class="errorlist">
+        {% for error in form.password1.errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+
+    <!-- Konfirmasi Password -->
+    <div style="margin-bottom: 24px;">
+      <label for="{{ form.password2.id_for_label }}">
+        Konfirmasi Password <span style="color: var(--danger);">*</span>
+      </label>
+      {{ form.password2 }}
+      {% if form.password2.errors %}
+      <ul class="errorlist">
+        {% for error in form.password2.errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
+        Buat Akun Admin
+      </button>
+      <a class="button secondary" href="{% url 'admin_list' %}">Batal</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

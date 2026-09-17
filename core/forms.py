@@ -1,8 +1,9 @@
 from django import forms
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from .models import Fasilitas, Reservasi
+from .models import Fasilitas, Reservasi, User
 
 
 JAM_OPERASIONAL_MULAI = 7
@@ -143,3 +144,73 @@ class CancelReservasiForm(forms.Form):
         if not alasan:
             raise ValidationError("Alasan pembatalan tidak boleh kosong.")
         return alasan
+
+
+class AdminCreateForm(forms.ModelForm):
+    """Form untuk Super Admin membuat akun Admin baru."""
+    password1 = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput(attrs={"placeholder": "Masukkan password baru", "autocomplete": "new-password"}),
+        help_text="Password harus memenuhi kebijakan keamanan sistem.",
+    )
+    password2 = forms.CharField(
+        label="Konfirmasi Password",
+        widget=forms.PasswordInput(attrs={"placeholder": "Ulangi password", "autocomplete": "new-password"}),
+    )
+
+    class Meta:
+        model = User
+        fields = ["username", "nama", "email"]
+        widgets = {
+            "username": forms.TextInput(attrs={"placeholder": "Contoh: admin.budi", "autocomplete": "off"}),
+            "nama": forms.TextInput(attrs={"placeholder": "Contoh: Budi Santoso"}),
+            "email": forms.EmailInput(attrs={"placeholder": "Contoh: budi@bp3ip.go.id"}),
+        }
+        help_texts = {
+            "username": "Username harus unik. Gunakan huruf kecil, angka, dan tanda titik/garis bawah.",
+        }
+
+    def clean_username(self):
+        username = self.cleaned_data.get("username", "").strip()
+        if not username:
+            raise ValidationError("Username tidak boleh kosong.")
+        if User.objects.filter(username=username).exists():
+            raise ValidationError("Username sudah digunakan. Pilih username lain.")
+        return username
+
+    def clean_nama(self):
+        nama = self.cleaned_data.get("nama", "").strip()
+        if not nama:
+            raise ValidationError("Nama lengkap tidak boleh kosong.")
+        return nama
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").strip().lower()
+        if not email:
+            raise ValidationError("Email tidak boleh kosong.")
+        if User.objects.filter(email=email).exists():
+            raise ValidationError("Email sudah terdaftar.")
+        return email
+
+    def clean_password1(self):
+        password1 = self.cleaned_data.get("password1")
+        if password1:
+            validate_password(password1)
+        return password1
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            self.add_error("password2", "Konfirmasi password tidak cocok.")
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password1"])
+        user.role = User.Role.ADMIN
+        user.is_active = True
+        if commit:
+            user.save()
+        return user

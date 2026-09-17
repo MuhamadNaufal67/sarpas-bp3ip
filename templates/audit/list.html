@@ -5,7 +5,37 @@
 {% block content %}
 <div class="page-heading">
   <h1>Audit Log Aktivitas</h1>
-  <p>Rekaman 200 aktivitas sistem terbaru yang dilakukan oleh pengguna.</p>
+  <p>Rekaman seluruh riwayat aktivitas sistem yang dilakukan oleh pengguna.</p>
+</div>
+
+<!-- Form Pencarian -->
+<div class="card" style="margin-bottom: 16px; padding: 16px 20px;">
+  <form method="get" action="" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 220px;">
+      <label style="font-size: 13px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;" for="id-search-audit">Cari Audit Log</label>
+      <input
+        id="id-search-audit"
+        type="text"
+        name="q"
+        value="{{ q }}"
+        placeholder="Aksi (SETUJUI, TOLAK, BATAL, BUAT_ADMIN), entitas, pengguna, atau detail..."
+        style="width: 100%; margin: 0;"
+      >
+    </div>
+    <button type="submit" class="button" style="padding: 10px 20px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 6px;"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      Cari
+    </button>
+    {% if q %}
+    <a class="button secondary" href="{% url 'audit_log_list' %}" style="padding: 10px 16px;">Reset</a>
+    {% endif %}
+  </form>
+  {% if q %}
+  <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted);">
+    Menampilkan hasil pencarian untuk: <strong>"{{ q }}"</strong>
+    &mdash; {{ page_obj.paginator.count }} log aktivitas ditemukan.
+  </div>
+  {% endif %}
 </div>
 
 <div class="card">
@@ -34,7 +64,7 @@
             <span class="badge badge-approved">{{ log.aksi }}</span>
             {% elif log.aksi == 'TOLAK' or log.aksi == 'HAPUS' or log.aksi == 'BATAL' %}
             <span class="badge badge-rejected">{{ log.aksi }}</span>
-            {% elif log.aksi == 'TAMBAH' or log.aksi == 'AJUKAN' %}
+            {% elif log.aksi == 'TAMBAH' or log.aksi == 'AJUKAN' or log.aksi == 'BUAT_ADMIN' %}
             <span class="badge badge-pending">{{ log.aksi }}</span>
             {% else %}
             <span class="badge" style="background: var(--surface-hover); color: var(--text-muted);">{{ log.aksi }}</span>
@@ -57,8 +87,12 @@
               <div class="empty-state-icon">
                 <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
               </div>
-              <div class="empty-state-title">Belum ada log aktivitas</div>
-              <div class="empty-state-desc">Setiap penambahan, pengajuan, persetujuan, dan perubahan sistem akan terekam di sini.</div>
+              <div class="empty-state-title">
+                {% if q %}Tidak ada log yang cocok dengan "{{ q }}"{% else %}Belum ada log aktivitas{% endif %}
+              </div>
+              <div class="empty-state-desc">
+                {% if q %}Coba kata kunci lain atau <a href="{% url 'audit_log_list' %}">tampilkan semua log</a>.{% else %}Seluruh tindakan sistem dan pengguna akan terekam secara otomatis di sini.{% endif %}
+              </div>
             </div>
           </td>
         </tr>
@@ -66,5 +100,34 @@
       </tbody>
     </table>
   </div>
+
+  <!-- Navigasi Pagination -->
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0 4px; flex-wrap: wrap; gap: 8px;">
+    <div style="font-size: 13px; color: var(--text-muted);">
+      Halaman {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}
+      &mdash; Total {{ page_obj.paginator.count }} log aktivitas
+    </div>
+    <div style="display: flex; gap: 6px; align-items: center;">
+      {% if page_obj.has_previous %}
+      <a class="button secondary" style="padding: 6px 14px; font-size: 13px;"
+         href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.previous_page_number }}">&larr; Sebelumnya</a>
+      {% else %}
+      <span class="button secondary" style="padding: 6px 14px; font-size: 13px; opacity: 0.4; cursor: not-allowed;">&larr; Sebelumnya</span>
+      {% endif %}
+
+      <span style="font-size: 13px; font-weight: 600; padding: 0 8px; color: var(--text);">
+        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+      <a class="button secondary" style="padding: 6px 14px; font-size: 13px;"
+         href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.next_page_number }}">Selanjutnya &rarr;</a>
+      {% else %}
+      <span class="button secondary" style="padding: 6px 14px; font-size: 13px; opacity: 0.4; cursor: not-allowed;">Selanjutnya &rarr;</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
