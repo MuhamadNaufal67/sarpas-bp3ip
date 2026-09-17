@@ -24,10 +24,43 @@ def fasilitas_tersedia(fasilitas, tanggal, jam_mulai, jam_selesai, exclude_id=No
 
 
 class FasilitasForm(forms.ModelForm):
+    kapasitas = forms.IntegerField(
+        min_value=1,
+        error_messages={
+            "min_value": "Kapasitas fasilitas minimal 1 orang.",
+            "invalid": "Masukkan angka yang valid untuk kapasitas.",
+            "required": "Kapasitas fasilitas wajib diisi.",
+        },
+        widget=forms.NumberInput(attrs={"min": "1", "step": "1", "placeholder": "Contoh: 30"}),
+    )
+
     class Meta:
         model = Fasilitas
         fields = ["nama_fasilitas", "kategori", "lokasi", "kapasitas", "deskripsi", "status", "keterangan_tambahan"]
-        widgets = {"deskripsi": forms.Textarea(attrs={"rows": 3}), "keterangan_tambahan": forms.Textarea(attrs={"rows": 3})}
+        widgets = {
+            "nama_fasilitas": forms.TextInput(attrs={"placeholder": "Nama ruangan / lab"}),
+            "lokasi": forms.TextInput(attrs={"placeholder": "Contoh: Gedung A Lantai 2"}),
+            "deskripsi": forms.Textarea(attrs={"rows": 3, "placeholder": "Deskripsi umum fasilitas"}),
+            "keterangan_tambahan": forms.Textarea(attrs={"rows": 3, "placeholder": "Spesifikasi alat, AC, proyektor, dll."}),
+        }
+
+    def clean_nama_fasilitas(self):
+        nama = self.cleaned_data.get("nama_fasilitas", "").strip()
+        if not nama:
+            raise ValidationError("Nama fasilitas tidak boleh kosong.")
+        return nama
+
+    def clean_lokasi(self):
+        lokasi = self.cleaned_data.get("lokasi", "").strip()
+        if not lokasi:
+            raise ValidationError("Lokasi fasilitas tidak boleh kosong.")
+        return lokasi
+
+    def clean_deskripsi(self):
+        return self.cleaned_data.get("deskripsi", "").strip()
+
+    def clean_keterangan_tambahan(self):
+        return self.cleaned_data.get("keterangan_tambahan", "").strip()
 
 
 class ReservasiForm(forms.ModelForm):
@@ -36,14 +69,25 @@ class ReservasiForm(forms.ModelForm):
         fields = ["fasilitas", "tanggal", "jam_mulai", "jam_selesai", "keperluan", "keterangan"]
         widgets = {
             "tanggal": forms.DateInput(attrs={"type": "date"}),
-            "jam_mulai": forms.TimeInput(attrs={"type": "time"}),
-            "jam_selesai": forms.TimeInput(attrs={"type": "time"}),
-            "keterangan": forms.Textarea(attrs={"rows": 3}),
+            "jam_mulai": forms.TimeInput(attrs={"type": "time", "step": "1800", "min": "07:00", "max": "18:00"}),
+            "jam_selesai": forms.TimeInput(attrs={"type": "time", "step": "1800", "min": "07:00", "max": "18:00"}),
+            "keperluan": forms.TextInput(attrs={"placeholder": "Contoh: Diklat Pelaut Tingkat II"}),
+            "keterangan": forms.Textarea(attrs={"rows": 3, "placeholder": "Kebutuhan tambahan seperti perlengkapan audio/visual (opsional)"}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["fasilitas"].queryset = Fasilitas.objects.filter(status=Fasilitas.Status.AKTIF)
+        self.fields["fasilitas"].empty_label = "-- Pilih Fasilitas Aktif --"
+
+    def clean_keperluan(self):
+        keperluan = self.cleaned_data.get("keperluan", "").strip()
+        if not keperluan:
+            raise ValidationError("Keperluan reservasi tidak boleh kosong.")
+        return keperluan
+
+    def clean_keterangan(self):
+        return self.cleaned_data.get("keterangan", "").strip()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -76,12 +120,26 @@ class ReservasiForm(forms.ModelForm):
 class RejectReservasiForm(forms.Form):
     alasan_penolakan = forms.CharField(
         label="Alasan penolakan",
-        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "Tuliskan alasan penolakan"}),
+        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "Tuliskan alasan penolakan secara jelas"}),
+        error_messages={"required": "Alasan penolakan wajib diisi."},
     )
+
+    def clean_alasan_penolakan(self):
+        alasan = self.cleaned_data.get("alasan_penolakan", "").strip()
+        if not alasan:
+            raise ValidationError("Alasan penolakan tidak boleh kosong.")
+        return alasan
 
 
 class CancelReservasiForm(forms.Form):
     alasan_pembatalan = forms.CharField(
         label="Alasan pembatalan",
-        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Tuliskan alasan pembatalan"}),
+        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Tuliskan alasan pembatalan reservasi"}),
+        error_messages={"required": "Alasan pembatalan wajib diisi."},
     )
+
+    def clean_alasan_pembatalan(self):
+        alasan = self.cleaned_data.get("alasan_pembatalan", "").strip()
+        if not alasan:
+            raise ValidationError("Alasan pembatalan tidak boleh kosong.")
+        return alasan

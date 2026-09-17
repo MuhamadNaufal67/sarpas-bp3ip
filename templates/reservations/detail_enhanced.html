@@ -1,1 +1,143 @@
-{% extends 'base.html' %}{% block content %}<div class="card"><h1>Detail Pengajuan</h1><p><b>Pemohon:</b> {{ reservasi.pemohon.nama }}</p><p><b>Fasilitas:</b> {{ reservasi.fasilitas }} ({{ reservasi.fasilitas.get_kategori_display }})</p><p><b>Lokasi:</b> {{ reservasi.fasilitas.lokasi }}</p><p><b>Waktu:</b> {{ reservasi.tanggal|date:'d M Y' }}, {{ reservasi.jam_mulai|time:'H.i' }}&ndash;{{ reservasi.jam_selesai|time:'H.i' }}</p><p><b>Keperluan:</b> {{ reservasi.keperluan }}</p><p><b>Keterangan:</b> {{ reservasi.keterangan|default:'-' }}</p><p><b>Status:</b> {{ reservasi.get_status_display }}</p>{% if reservasi.alasan_penolakan %}<p><b>Alasan penolakan:</b> {{ reservasi.alasan_penolakan }}</p>{% endif %}{% if reservasi.alasan_pembatalan %}<p><b>Alasan pembatalan:</b> {{ reservasi.alasan_pembatalan }}</p>{% endif %}{% if reservasi.status == 'PENDING' %}<form class="inline" method="post" action="{% url 'pengajuan_approve' reservasi.pk %}">{% csrf_token %}<button class="ok">Setujui</button></form><hr><h2>Tolak Pengajuan</h2><form method="post" action="{% url 'pengajuan_reject' reservasi.pk %}">{% csrf_token %}{{ reject_form.alasan_penolakan.label_tag }}{{ reject_form.alasan_penolakan }}{{ reject_form.alasan_penolakan.errors }}<button class="danger">Tolak Reservasi</button></form>{% endif %}<a class="button secondary" href="{% url 'pengajuan_list' %}">Kembali</a></div>{% endblock %}
+{% extends 'base.html' %}
+
+{% block page_title %}Detail Pengajuan Reservasi{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Detail Pengajuan Reservasi</h1>
+  <p>Tinjau rincian peminjaman sarana prasarana sebelum memberikan persetujuan atau penolakan.</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 800px;">
+  <!-- Rincian Reservasi Card -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+      <h2>Informasi Reservasi</h2>
+      <div>
+        {% if reservasi.status == 'PENDING' %}
+        <span class="badge badge-pending">{{ reservasi.get_status_display }}</span>
+        {% elif reservasi.status == 'APPROVED' %}
+        <span class="badge badge-approved">{{ reservasi.get_status_display }}</span>
+        {% elif reservasi.status == 'REJECTED' %}
+        <span class="badge badge-rejected">{{ reservasi.get_status_display }}</span>
+        {% elif reservasi.status == 'NEEDS_REVISION' %}
+        <span class="badge badge-revision">{{ reservasi.get_status_display }}</span>
+        {% elif reservasi.status == 'CANCELLED' %}
+        <span class="badge badge-cancelled">{{ reservasi.get_status_display }}</span>
+        {% else %}
+        <span class="badge badge-draft">{{ reservasi.get_status_display }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <table style="margin: 0;">
+      <tbody>
+        <tr>
+          <td style="width: 180px; font-weight: 600; color: var(--text-muted);">Pemohon</td>
+          <td><strong>{{ reservasi.pemohon.nama|default:reservasi.pemohon.username }}</strong> ({{ reservasi.pemohon.email }})</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600; color: var(--text-muted);">Fasilitas</td>
+          <td>
+            <strong>{{ reservasi.fasilitas.nama_fasilitas }}</strong> 
+            <span class="badge" style="font-size: 11px; margin-left: 6px;">{{ reservasi.fasilitas.get_kategori_display }}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600; color: var(--text-muted);">Lokasi</td>
+          <td>{{ reservasi.fasilitas.lokasi }} (Kapasitas: {{ reservasi.fasilitas.kapasitas }} orang)</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600; color: var(--text-muted);">Jadwal Penggunaan</td>
+          <td>
+            <strong>{{ reservasi.tanggal|date:'l, d F Y' }}</strong><br>
+            Pukul {{ reservasi.jam_mulai|time:'H:i' }} &ndash; {{ reservasi.jam_selesai|time:'H:i' }} WIB
+          </td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600; color: var(--text-muted);">Keperluan</td>
+          <td>{{ reservasi.keperluan }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600; color: var(--text-muted);">Keterangan Tambahan</td>
+          <td>{{ reservasi.keterangan|default:'-' }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600; color: var(--text-muted);">Waktu Pengajuan</td>
+          <td>{{ reservasi.created_at|date:'d M Y, H:i' }} WIB</td>
+        </tr>
+        {% if reservasi.alasan_penolakan %}
+        <tr>
+          <td style="font-weight: 600; color: var(--danger-text);">Alasan Penolakan</td>
+          <td style="color: var(--danger-text); background: var(--danger-bg); font-weight: 500;">{{ reservasi.alasan_penolakan }}</td>
+        </tr>
+        {% endif %}
+        {% if reservasi.alasan_pembatalan %}
+        <tr>
+          <td style="font-weight: 600; color: var(--text-muted);">Alasan Pembatalan</td>
+          <td style="background: var(--surface-hover);">{{ reservasi.alasan_pembatalan }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if reservasi.status == 'PENDING' %}
+  <!-- Kartu Keputusan Approval Atasan -->
+  <div class="card" style="border-top: 4px solid var(--primary);">
+    <h2>Keputusan Persetujuan</h2>
+    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+      Silakan setujui pengajuan jika jadwal dan kapasitas sesuai, atau tolak dengan mencantumkan alasan penolakan yang jelas.
+    </p>
+
+    <!-- Tombol Setujui dengan Modal Konfirmasi & Peringatan Konflik -->
+    <form method="post" action="{% url 'pengajuan_approve' reservasi.pk %}"
+          data-confirm="Apakah Anda yakin ingin <strong>menyetujui</strong> reservasi fasilitas ini?<br><br><span style='color: var(--warning-text); font-size: 13px;'>⚠️ <strong>Perhatian:</strong> Menyetujui reservasi ini akan secara otomatis menandai pengajuan lain yang mengalami konflik waktu dan fasilitas menjadi <strong>'Perlu Diperbaiki'</strong>.</span>"
+          data-confirm-title="Konfirmasi Persetujuan Reservasi"
+          data-confirm-btn-class="button ok"
+          data-confirm-btn-text="Ya, Setujui Reservasi"
+          style="display: inline-block; margin-bottom: 24px;">
+      {% csrf_token %}
+      <button type="submit" class="button ok" style="padding: 12px 24px; font-size: 15px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        Setujui Reservasi
+      </button>
+    </form>
+
+    <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
+
+    <!-- Form Tolak dengan Alasan Wajib -->
+    <h3 style="margin-top: 0; font-size: 16px;">Tolak Pengajuan Reservasi</h3>
+    <form method="post" action="{% url 'pengajuan_reject' reservasi.pk %}"
+          data-confirm="Apakah Anda yakin ingin <strong>menolak</strong> reservasi ini? Pemohon akan menerima notifikasi bahwa pengajuan ditolak beserta alasan yang Anda cantumkan."
+          data-confirm-title="Konfirmasi Penolakan Reservasi"
+          data-confirm-btn-class="button danger"
+          data-confirm-btn-text="Ya, Tolak Reservasi">
+      {% csrf_token %}
+      <div style="margin-bottom: 14px;">
+        <label for="{{ reject_form.alasan_penolakan.id_for_label }}">
+          Alasan Penolakan <span style="color: var(--danger);">*</span>
+        </label>
+        {{ reject_form.alasan_penolakan }}
+        <small style="color: var(--text-muted); display: block; margin-top: 4px;">Wajib diisi agar pemohon mengetahui alasan tidak disetujuinya peminjaman.</small>
+        {% if reject_form.alasan_penolakan.errors %}
+        <ul class="errorlist">
+          {% for err in reject_form.alasan_penolakan.errors %}
+          <li>{{ err }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      <button type="submit" class="button danger">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        Tolak Reservasi
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div style="margin-bottom: 20px;">
+    <a class="button secondary" href="{% url 'pengajuan_list' %}">&larr; Kembali ke Daftar Pengajuan</a>
+  </div>
+</div>
+{% endblock %}

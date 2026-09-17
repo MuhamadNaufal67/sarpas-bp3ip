@@ -1,1 +1,208 @@
-{% extends 'base.html' %}{% block content %}<div class="card"><h1>{{ judul }}</h1><p class="muted">Pemohon: {{ user.nama }}. Fasilitas yang ditampilkan hanya fasilitas aktif.</p><form method="post">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}{% endfor %}<button type="submit">Kirim Pengajuan</button><a class="button secondary" href="{% url 'reservasi_list' %}">Batal</a></form></div>{% endblock %}
+{% extends 'base.html' %}
+
+{% block page_title %}{{ judul }}{% endblock %}
+
+{% block content %}
+<div class="reservasi-form-page">
+
+  <div class="page-heading">
+    <h1>{{ judul }}</h1>
+    <p>Pemohon: <strong>{{ user.nama|default:user.username }}</strong>. Hanya fasilitas aktif yang dapat dipilih untuk reservasi.</p>
+  </div>
+
+  <div class="reservasi-form-center">
+    <div class="card reservasi-card">
+
+      <!-- Ketentuan -->
+      <div class="reservasi-info-box">
+        <div class="reservasi-info-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div class="reservasi-info-content">
+          <strong>Ketentuan Pengajuan:</strong>
+          <ul>
+            <li>Hari operasional: <strong>Senin &ndash; Sabtu</strong> (Minggu libur).</li>
+            <li>Jam operasional: <strong>07.00 &ndash; 18.00 WIB</strong> (interval 30 menit).</li>
+            <li>Jam selesai harus lebih besar dari jam mulai.</li>
+          </ul>
+        </div>
+        <button type="button" class="reservasi-info-close" onclick="this.closest('.reservasi-info-box').style.display='none'" aria-label="Tutup">&times;</button>
+      </div>
+
+      <form method="post" class="reservasi-form" id="reservasi-form-main">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="message error" style="margin-bottom: 18px;">
+          {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <!-- Fasilitas -->
+        <div class="form-field {% if form.fasilitas.errors %}field-has-error{% endif %}">
+          <label for="{{ form.fasilitas.id_for_label }}" class="form-label">
+            Fasilitas <span class="required-star">*</span>
+          </label>
+          {{ form.fasilitas }}
+          {% if form.fasilitas.errors %}
+          <div class="field-error-msg">
+            {% for e in form.fasilitas.errors %}{{ e }}{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Tanggal -->
+        <div class="form-field {% if form.tanggal.errors %}field-has-error{% endif %}">
+          <label for="{{ form.tanggal.id_for_label }}" class="form-label">
+            Tanggal <span class="required-star">*</span>
+          </label>
+          {{ form.tanggal }}
+          {% if form.tanggal.errors %}
+          <div class="field-error-msg">
+            {% for e in form.tanggal.errors %}{{ e }}{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Jam Mulai & Selesai — side by side -->
+        <div class="form-field-row">
+          <div class="form-field {% if form.jam_mulai.errors %}field-has-error{% endif %}">
+            <label for="jam_mulai_select" class="form-label">
+              Jam Mulai <span class="required-star">*</span>
+            </label>
+            <select name="jam_mulai" id="jam_mulai_select" class="jam-select">
+              <option value="">-- Pilih jam --</option>
+              {% for h in "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0"|make_list %}{% endfor %}
+            </select>
+            {# Hidden fallback — Django still reads the POST value from the select above #}
+            {% if form.jam_mulai.errors %}
+            <div class="field-error-msg">
+              {% for e in form.jam_mulai.errors %}{{ e }}{% endfor %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="form-field {% if form.jam_selesai.errors %}field-has-error{% endif %}">
+            <label for="jam_selesai_select" class="form-label">
+              Jam Selesai <span class="required-star">*</span>
+            </label>
+            <select name="jam_selesai" id="jam_selesai_select" class="jam-select">
+              <option value="">-- Pilih jam --</option>
+            </select>
+            {% if form.jam_selesai.errors %}
+            <div class="field-error-msg">
+              {% for e in form.jam_selesai.errors %}{{ e }}{% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Keperluan -->
+        <div class="form-field {% if form.keperluan.errors %}field-has-error{% endif %}">
+          <label for="{{ form.keperluan.id_for_label }}" class="form-label">
+            Keperluan <span class="required-star">*</span>
+          </label>
+          {{ form.keperluan }}
+          {% if form.keperluan.errors %}
+          <div class="field-error-msg">
+            {% for e in form.keperluan.errors %}{{ e }}{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Keterangan -->
+        <div class="form-field">
+          <label for="{{ form.keterangan.id_for_label }}" class="form-label">
+            Keterangan Tambahan
+            <span class="form-label-opt">(opsional)</span>
+          </label>
+          {{ form.keterangan }}
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            Kirim Pengajuan
+          </button>
+          <a class="button secondary" href="{% url 'reservasi_list' %}">Batal</a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---- Jam Select — 30 menit interval, 07:00 – 18:00 ---- */
+(function () {
+  var startSel = document.getElementById('jam_mulai_select');
+  var endSel   = document.getElementById('jam_selesai_select');
+
+  /* Value yang sudah ada (dari POST saat error) */
+  var existingStart = "{{ form.jam_mulai.value|default:'' }}";
+  var existingEnd   = "{{ form.jam_selesai.value|default:'' }}";
+
+  /* Normalize hh:mm:ss → hh:mm */
+  function normTime(v) {
+    if (!v) return '';
+    return v.slice(0, 5);
+  }
+  existingStart = normTime(existingStart);
+  existingEnd   = normTime(existingEnd);
+
+  /* Buat daftar waktu 07:00 – 18:00, interval 30 menit */
+  function buildTimes(fromHour, toHour) {
+    var times = [];
+    for (var h = fromHour; h <= toHour; h++) {
+      for (var m = 0; m < 60; m += 30) {
+        if (h === toHour && m > 0) break;
+        var hh = (h < 10 ? '0' : '') + h;
+        var mm = (m === 0 ? '00' : '30');
+        times.push(hh + ':' + mm);
+      }
+    }
+    return times;
+  }
+
+  var allTimes = buildTimes(7, 18);
+
+  /* Isi select jam mulai */
+  function populateStart() {
+    startSel.innerHTML = '<option value="">-- Pilih jam mulai --</option>';
+    allTimes.forEach(function(t) {
+      var opt = document.createElement('option');
+      opt.value = t + ':00';   /* kirim hh:mm:ss ke Django */
+      opt.textContent = t;
+      if (existingStart && (existingStart === t || existingStart === t + ':00')) {
+        opt.selected = true;
+      }
+      startSel.appendChild(opt);
+    });
+    populateEnd();
+  }
+
+  /* Isi select jam selesai — hanya waktu setelah jam mulai */
+  function populateEnd() {
+    var startVal = normTime(startSel.value);
+    endSel.innerHTML = '<option value="">-- Pilih jam selesai --</option>';
+    allTimes.forEach(function(t) {
+      if (t <= startVal) return;  /* harus lebih besar dari jam mulai */
+      var opt = document.createElement('option');
+      opt.value = t + ':00';
+      opt.textContent = t;
+      if (existingEnd && (existingEnd === t || existingEnd === t + ':00')) {
+        opt.selected = true;
+      }
+      endSel.appendChild(opt);
+    });
+  }
+
+  populateStart();
+  startSel.addEventListener('change', populateEnd);
+})();
+</script>
+{% endblock %}
