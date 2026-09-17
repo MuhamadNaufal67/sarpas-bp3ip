@@ -123,3 +123,97 @@ class SarpasTestCase(TestCase):
         schedule = get_weekly_schedule(get_week_start("2026-09-10"))
         visible = [booking for row in schedule["rows"] for cell in row["cells"] for booking in cell["bookings"]]
         self.assertEqual(visible, [approved])
+
+    def test_super_admin_kelola_akun_admin_dan_buat_admin(self):
+        super_admin = User.objects.create_user(
+            username="superadmin", password="password-super-123", nama="Super Admin BP3IP",
+            email="superadmin@example.com", role=User.Role.SUPER_ADMIN,
+        )
+        self.client.login(username="superadmin", password="password-super-123")
+        
+        # Test halaman daftar admin
+        response = self.client.get(reverse("admin_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Kelola Akun Admin")
+        self.assertContains(response, "admin1")
+
+        # Test halaman form tambah admin
+        response = self.client.get(reverse("admin_create"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Tambah Akun Admin")
+
+        # Test buat akun admin baru berhasil
+        data_admin_baru = {
+            "username": "admin2",
+            "nama": "Admin Dua",
+            "email": "admin2@bp3ip.go.id",
+            "password1": "PasswordKuat#123",
+            "password2": "PasswordKuat#123",
+        }
+        res_post = self.client.post(reverse("admin_create"), data_admin_baru)
+        self.assertRedirects(res_post, reverse("admin_list"))
+        
+        # Pastikan user baru tersimpan dengan role ADMIN
+        user_baru = User.objects.get(username="admin2")
+        self.assertEqual(user_baru.role, User.Role.ADMIN)
+        self.assertEqual(user_baru.nama, "Admin Dua")
+        self.assertTrue(user_baru.check_password("PasswordKuat#123"))
+
+    def test_non_super_admin_tidak_bisa_akses_kelola_akun(self):
+        # Admin biasa tidak boleh akses
+        self.client.login(username="admin1", password="password-kuat-123")
+        res_admin = self.client.get(reverse("admin_list"))
+        self.assertRedirects(res_admin, reverse("dashboard"))
+        res_create = self.client.get(reverse("admin_create"))
+        self.assertRedirects(res_create, reverse("dashboard"))
+
+    def test_reservasi_create_memuat_fasilitas_json_dan_kategori(self):
+        # Buat fasilitas dengan kategori KELAS, LAB, dan LAINNYA
+        Fasilitas.objects.create(
+            nama_fasilitas="Kelas 101", kategori=Fasilitas.Kategori.KELAS,
+            lokasi="Lantai 1", kapasitas=30,
+        )
+        Fasilitas.objects.create(
+            nama_fasilitas="Lab Simulator Navigasi", kategori=Fasilitas.Kategori.LABORATORIUM_SIMULATOR,
+            lokasi="Lantai 2", kapasitas=15,
+        )
+        self.client.login(username="admin1", password="password-kuat-123")
+        response = self.client.get(reverse("reservasi_create"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Kategori Fasilitas")
+        self.assertContains(response, "Kelas 101")
+        self.assertContains(response, "Lab Simulator Navigasi")
+        self.assertIn("fasilitas_json", response.context)
+
+    def test_search_dan_pagination_tabel_tabel(self):
+        super_admin = User.objects.create_user(
+            username="superadmin", password="password-super-123", nama="Super Admin BP3IP",
+            email="superadmin@example.com", role=User.Role.SUPER_ADMIN,
+        )
+        self.client.login(username="superadmin", password="password-super-123")
+
+        # 1. Search Fasilitas
+        res_fas = self.client.get(reverse("fasilitas_list"), {"q": "Rapat"})
+        self.assertEqual(res_fas.status_code, 200)
+        self.assertContains(res_fas, "Ruang Rapat A")
+        self.assertContains(res_fas, "Menampilkan hasil pencarian")
+
+        # 2. Search Kelola Akun Admin
+        res_adm = self.client.get(reverse("admin_list"), {"q": "admin1"})
+        self.assertEqual(res_adm.status_code, 200)
+        self.assertContains(res_adm, "admin1")
+
+        # 3. Search Kelola Semua Reservasi
+        self.buat_reservasi(status=Reservasi.Status.PENDING)
+        res_man = self.client.get(reverse("reservasi_manage"), {"q": "Rapat"})
+        self.assertEqual(res_man.status_code, 200)
+        self.assertContains(res_man, "Ruang Rapat A")
+
+        # 4. Search Audit Log
+        from core.models import AuditLog
+        AuditLog.objects.create(actor=super_admin, aksi="UJI_LOG", entitas="Test", detail="Pencarian log berhasil")
+        res_aud = self.client.get(reverse("audit_log_list"), {"q": "UJI_LOG"})
+        self.assertEqual(res_aud.status_code, 200)
+        self.assertContains(res_aud, "Pencarian log berhasil")
+
+

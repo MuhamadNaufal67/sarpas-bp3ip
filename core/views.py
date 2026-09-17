@@ -1,16 +1,29 @@
+import json
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
+from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .decorators import role_required
-from .forms import CancelReservasiForm, FasilitasForm, RejectReservasiForm, ReservasiForm, fasilitas_tersedia
-from .models import AuditLog, Fasilitas, Notifikasi, Reservasi, User
+from .forms import (
+    AdminCreateForm,
+    CancelReservasiForm,
+    FasilitasForm,
+    RejectReservasiForm,
+    ReservasiForm,
+    fasilitas_tersedia,
+)
+from .models import AuditLog, Fasilitas, Notifikasi, Reservasi, User, _generate_kode_reservasi
 from .schedule import schedule_context
+
+
+ITEMS_PER_PAGE = 10
 
 
 def kirim_notifikasi(penerima, judul, pesan):
@@ -87,7 +100,25 @@ def dashboard(request):
 
 @role_required(User.Role.SUPER_ADMIN)
 def fasilitas_list(request):
-    return render(request, "facilities/list.html", {"fasilitas_list": Fasilitas.objects.all()})
+    qs = Fasilitas.objects.all().order_by("nama_fasilitas")
+    q = request.GET.get("q", "").strip()
+    if q:
+        qs = qs.filter(
+            Q(nama_fasilitas__icontains=q)
+            | Q(kategori__icontains=q)
+            | Q(lokasi__icontains=q)
+            | Q(deskripsi__icontains=q)
+            | Q(status__icontains=q)
+            | Q(keterangan_tambahan__icontains=q)
+        )
+    paginator = Paginator(qs, ITEMS_PER_PAGE)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    return render(request, "facilities/list.html", {
+        "fasilitas_list": page_obj,
+        "page_obj": page_obj,
+        "q": q,
+    })
 
 
 @role_required(User.Role.SUPER_ADMIN)
@@ -134,23 +165,67 @@ def fasilitas_delete(request, pk):
 
 @role_required(User.Role.ADMIN)
 def reservasi_list(request):
-    reservasi = Reservasi.objects.filter(pemohon=request.user).select_related("fasilitas")
-    return render(request, "reservations/list_enhanced.html", {"reservasi_list": reservasi, "cancel_form": CancelReservasiForm()})
+    """Daftar reservasi milik Admin yang sedang login, dengan search dan pagination."""
+    qs = Reservasi.objects.filter(pemohon=request.user).select_related("fasilitas")
+
+    q = request.GET.get("q", "").strip()
+    if q:
+        qs = qs.filter(
+            Q(kode_reservasi__icontains=q)
+            | Q(fasilitas__nama_fasilitas__icontains=q)
+            | Q(fasilitas__kategori__icontains=q)
+            | Q(status__icontains=q)
+            | Q(keperluan__icontains=q)
+        )
+
+    paginator = Paginator(qs, ITEMS_PER_PAGE)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "reservations/list_enhanced.html", {
+        "reservasi_list": page_obj,
+        "page_obj": page_obj,
+        "cancel_form": CancelReservasiForm(),
+        "q": q,
+    })
+
+
+def _get_fasilitas_json():
+    fasilitas_qs = (
+        Fasilitas.objects.filter(status=Fasilitas.Status.AKTIF)
+        .order_by("nama_fasilitas")
+        .values("id", "nama_fasilitas", "kategori", "kapasitas", "lokasi")
+    )
+    return json.dumps(list(fasilitas_qs))
 
 
 @role_required(User.Role.ADMIN)
 def reservasi_create(request):
     form = ReservasiForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        reservasi = form.save(commit=False)
-        reservasi.pemohon = request.user
-        reservasi.status = Reservasi.Status.PENDING
-        reservasi.save()
-        catat_audit(request, "AJUKAN", "Reservasi", reservasi, f"Mengajukan reservasi {reservasi.fasilitas} pada {reservasi.tanggal}.")
-        kirim_ke_atasan("Pengajuan reservasi baru", f"{request.user.nama} mengajukan {reservasi.fasilitas} pada {reservasi.tanggal}.")
-        messages.success(request, "Pengajuan reservasi berhasil dikirim dan menunggu approval.")
+        with transaction.atomic():
+            reservasi = form.save(commit=False)
+            reservasi.pemohon = request.user
+            reservasi.status = Reservasi.Status.PENDING
+            # Kunci baris yang ada agar generator aman dari race condition concurrent.
+            Reservasi.objects.select_for_update().filter(
+                kode_reservasi__startswith=None
+            ).count()  # force lock acquisition; actual count uses _generate_kode_reservasi
+            reservasi.kode_reservasi = _generate_kode_reservasi(reservasi.fasilitas)
+            reservasi.save()
+        catat_audit(request, "AJUKAN", "Reservasi", reservasi,
+                    f"Mengajukan reservasi {reservasi.fasilitas} pada {reservasi.tanggal}. Kode: {reservasi.kode_reservasi}")
+        kirim_ke_atasan(
+            "Pengajuan reservasi baru",
+            f"{request.user.nama} mengajukan {reservasi.fasilitas} pada {reservasi.tanggal}. Kode: {reservasi.kode_reservasi}"
+        )
+        messages.success(request, f"Pengajuan reservasi berhasil dikirim. Kode Reservasi Anda: {reservasi.kode_reservasi}")
         return redirect("reservasi_list")
-    return render(request, "reservations/form.html", {"form": form, "judul": "Ajukan Reservasi"})
+    return render(request, "reservations/form.html", {
+        "form": form,
+        "judul": "Ajukan Reservasi",
+        "fasilitas_json": _get_fasilitas_json(),
+    })
 
 
 @role_required(User.Role.ADMIN)
@@ -164,12 +239,17 @@ def reservasi_update(request, pk):
         reservasi = form.save(commit=False)
         reservasi.status = Reservasi.Status.PENDING
         reservasi.alasan_penolakan = ""
+        # Kode reservasi TIDAK diubah saat revisi.
         reservasi.save()
         catat_audit(request, "PERBAIKI", "Reservasi", reservasi, f"Memperbarui pengajuan reservasi {reservasi.fasilitas}.")
         kirim_ke_atasan("Pengajuan reservasi diperbarui", f"{request.user.nama} mengajukan kembali {reservasi.fasilitas} pada {reservasi.tanggal}.")
         messages.success(request, "Reservasi diperbarui dan dikirim kembali untuk approval.")
         return redirect("reservasi_list")
-    return render(request, "reservations/form.html", {"form": form, "judul": "Perbaiki Reservasi"})
+    return render(request, "reservations/form.html", {
+        "form": form,
+        "judul": "Perbaiki Reservasi",
+        "fasilitas_json": _get_fasilitas_json(),
+    })
 
 
 @require_POST
@@ -216,19 +296,77 @@ def reservasi_cancel(request, pk):
 
 @role_required(User.Role.SUPER_ADMIN)
 def reservasi_manage(request):
-    reservasi = Reservasi.objects.select_related("pemohon", "fasilitas")
-    return render(request, "reservations/manage.html", {"reservasi_list": reservasi, "cancel_form": CancelReservasiForm()})
+    qs = Reservasi.objects.select_related("pemohon", "fasilitas").order_by("-tanggal", "jam_mulai")
+    q = request.GET.get("q", "").strip()
+    if q:
+        qs = qs.filter(
+            Q(kode_reservasi__icontains=q)
+            | Q(pemohon__nama__icontains=q)
+            | Q(pemohon__username__icontains=q)
+            | Q(fasilitas__nama_fasilitas__icontains=q)
+            | Q(fasilitas__kategori__icontains=q)
+            | Q(status__icontains=q)
+            | Q(keperluan__icontains=q)
+        )
+    paginator = Paginator(qs, ITEMS_PER_PAGE)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    return render(request, "reservations/manage.html", {
+        "reservasi_list": page_obj,
+        "page_obj": page_obj,
+        "cancel_form": CancelReservasiForm(),
+        "q": q,
+    })
 
 
 @role_required(User.Role.SUPER_ADMIN)
 def audit_log_list(request):
-    return render(request, "audit/list.html", {"logs": AuditLog.objects.select_related("actor")[:200]})
+    qs = AuditLog.objects.select_related("actor").order_by("-created_at")
+    q = request.GET.get("q", "").strip()
+    if q:
+        qs = qs.filter(
+            Q(aksi__icontains=q)
+            | Q(entitas__icontains=q)
+            | Q(detail__icontains=q)
+            | Q(actor__nama__icontains=q)
+            | Q(actor__username__icontains=q)
+        )
+    paginator = Paginator(qs, 20)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    return render(request, "audit/list.html", {
+        "logs": page_obj,
+        "page_obj": page_obj,
+        "q": q,
+    })
 
 
 @role_required(User.Role.ATASAN)
 def pengajuan_list(request):
-    pengajuan = Reservasi.objects.select_related("pemohon", "fasilitas")
-    return render(request, "reservations/submissions_enhanced.html", {"pengajuan": pengajuan})
+    """Daftar semua pengajuan reservasi untuk Atasan, dengan search dan pagination."""
+    qs = Reservasi.objects.select_related("pemohon", "fasilitas").order_by("-tanggal", "jam_mulai")
+
+    q = request.GET.get("q", "").strip()
+    if q:
+        qs = qs.filter(
+            Q(kode_reservasi__icontains=q)
+            | Q(pemohon__nama__icontains=q)
+            | Q(pemohon__username__icontains=q)
+            | Q(fasilitas__nama_fasilitas__icontains=q)
+            | Q(fasilitas__kategori__icontains=q)
+            | Q(status__icontains=q)
+            | Q(keperluan__icontains=q)
+        )
+
+    paginator = Paginator(qs, ITEMS_PER_PAGE)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "reservations/submissions_enhanced.html", {
+        "pengajuan": page_obj,
+        "page_obj": page_obj,
+        "q": q,
+    })
 
 
 @role_required(User.Role.ATASAN)
@@ -285,7 +423,21 @@ def pengajuan_reject(request, pk):
 
 @login_required
 def notifikasi_list(request):
-    return render(request, "notifications/list.html", {"notifikasi_list": request.user.notifikasi.all()})
+    qs = request.user.notifikasi.all().order_by("-created_at")
+    q = request.GET.get("q", "").strip()
+    if q:
+        qs = qs.filter(
+            Q(judul__icontains=q)
+            | Q(pesan__icontains=q)
+        )
+    paginator = Paginator(qs, ITEMS_PER_PAGE)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    return render(request, "notifications/list.html", {
+        "notifikasi_list": page_obj,
+        "page_obj": page_obj,
+        "q": q,
+    })
 
 
 @require_POST
@@ -296,4 +448,40 @@ def notifikasi_baca(request, pk):
     notifikasi.save(update_fields=["status_baca"])
     return redirect("notifikasi_list")
 
-# Create your views here.
+
+# ── Super Admin: Kelola Akun Admin ─────────────────────────────────────────
+
+@role_required(User.Role.SUPER_ADMIN)
+def admin_list(request):
+    """Daftar seluruh akun dengan role Admin, dengan search dan pagination."""
+    qs = User.objects.filter(role=User.Role.ADMIN).order_by("nama")
+    q = request.GET.get("q", "").strip()
+    if q:
+        qs = qs.filter(
+            Q(username__icontains=q)
+            | Q(nama__icontains=q)
+            | Q(email__icontains=q)
+        )
+    paginator = Paginator(qs, ITEMS_PER_PAGE)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    return render(request, "accounts/admin_list.html", {
+        "admin_users": page_obj,
+        "page_obj": page_obj,
+        "q": q,
+    })
+
+
+@role_required(User.Role.SUPER_ADMIN)
+def admin_create(request):
+    """Form pembuatan akun Admin baru oleh Super Admin."""
+    form = AdminCreateForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        new_admin = form.save()
+        catat_audit(
+            request, "BUAT_ADMIN", "User", new_admin,
+            f"Super Admin membuat akun Admin baru: {new_admin.username} ({new_admin.nama})."
+        )
+        messages.success(request, f"Akun Admin '{new_admin.username}' berhasil dibuat.")
+        return redirect("admin_list")
+    return render(request, "accounts/admin_create.html", {"form": form})

@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 
 
 class User(AbstractUser):
@@ -24,6 +24,7 @@ class Fasilitas(models.Model):
         KELAS = "KELAS", "Kelas"
         LABORATORIUM = "LABORATORIUM", "Laboratorium"
         LABORATORIUM_SIMULATOR = "LABORATORIUM_SIMULATOR", "Laboratorium Simulator"
+        LAINNYA = "LAINNYA", "Lainnya"
 
     class Status(models.TextChoices):
         AKTIF = "AKTIF", "Aktif"
@@ -45,6 +46,48 @@ class Fasilitas(models.Model):
         return self.nama_fasilitas
 
 
+# Mapping kategori fasilitas ke prefix kode reservasi.
+# Tambah entry baru di sini jika kategori baru ditambahkan ke Fasilitas.Kategori.
+KATEGORI_PREFIX_MAP = {
+    Fasilitas.Kategori.KELAS: "KLS",
+    Fasilitas.Kategori.LABORATORIUM: "LAB",
+    Fasilitas.Kategori.LABORATORIUM_SIMULATOR: "SIM",
+    Fasilitas.Kategori.RUANGAN: "RSG",
+    Fasilitas.Kategori.LAINNYA: "LNY",
+}
+
+
+def _generate_kode_reservasi(fasilitas):
+    """
+    Menghasilkan kode reservasi unik berdasarkan kategori fasilitas.
+    Format: {PREFIX}{NOMOR_URUT_6_DIGIT}
+    Contoh: KLS000001, LAB000003, SIM000002
+
+    Fungsi ini harus dipanggil di dalam blok `with transaction.atomic()`
+    agar aman dari duplikasi pada kondisi concurrent.
+    """
+    prefix = KATEGORI_PREFIX_MAP.get(fasilitas.kategori, "RSV")
+    # Hitung jumlah reservasi yang sudah memiliki kode dengan prefix ini,
+    # menggunakan select_for_update melalui pemanggilan di view.
+    # Ambil nomor urut berikutnya dengan cara yang aman dari race condition:
+    # ambil kode terakhir untuk prefix ini, parse nomornya, lalu +1.
+    existing = (
+        Reservasi.objects.filter(kode_reservasi__startswith=prefix)
+        .order_by("-kode_reservasi")
+        .values_list("kode_reservasi", flat=True)
+        .first()
+    )
+    if existing:
+        try:
+            last_num = int(existing[len(prefix):])
+        except (ValueError, IndexError):
+            last_num = 0
+        next_num = last_num + 1
+    else:
+        next_num = 1
+    return f"{prefix}{next_num:06d}"
+
+
 class Reservasi(models.Model):
     class Status(models.TextChoices):
         DRAFT = "DRAFT", "Draft"
@@ -64,6 +107,9 @@ class Reservasi(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     alasan_penolakan = models.TextField(blank=True)
     alasan_pembatalan = models.TextField(blank=True)
+    # Kode unik reservasi. Nullable untuk kompatibilitas data lama.
+    # Diisi otomatis saat Admin mengajukan reservasi baru; tidak pernah diubah setelahnya.
+    kode_reservasi = models.CharField(max_length=20, unique=True, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -81,7 +127,8 @@ class Reservasi(models.Model):
             raise ValidationError({"jam_selesai": "Jam selesai harus lebih besar dari jam mulai."})
 
     def __str__(self):
-        return f"{self.fasilitas} - {self.tanggal}"
+        kode = f"[{self.kode_reservasi}] " if self.kode_reservasi else ""
+        return f"{kode}{self.fasilitas} - {self.tanggal}"
 
 
 class Notifikasi(models.Model):
@@ -112,5 +159,3 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"{self.aksi} - {self.entitas}"
-
-# Create your models here.

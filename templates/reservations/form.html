@@ -42,6 +42,23 @@
         </div>
         {% endif %}
 
+        <!-- Kategori / Jenis Fasilitas -->
+        <div class="form-field" id="kategori-fasilitas-wrapper">
+          <label for="kategori_fasilitas_select" class="form-label">
+            Kategori Fasilitas <span class="required-star">*</span>
+          </label>
+          <select id="kategori_fasilitas_select" class="form-control">
+            <option value="">-- Pilih Kategori (Kelas / Lab / Lainnya) --</option>
+            <option value="KELAS">Kelas</option>
+            <option value="LAB">Laboratorium</option>
+            <option value="LAINNYA">Lainnya / Ruangan</option>
+            <option value="ALL">Semua Fasilitas</option>
+          </select>
+          <small style="color: var(--text-muted); display: block; margin-top: 5px; font-size: 12px;">
+            Pilih kategori di atas untuk menyaring pilihan fasilitas di bawah.
+          </small>
+        </div>
+
         <!-- Fasilitas -->
         <div class="form-field {% if form.fasilitas.errors %}field-has-error{% endif %}">
           <label for="{{ form.fasilitas.id_for_label }}" class="form-label">
@@ -203,6 +220,114 @@
 
   populateStart();
   startSel.addEventListener('change', populateEnd);
+})();
+
+/* ---- Filter Fasilitas Berdasarkan Kategori (Kelas / Lab / Lainnya) ---- */
+(function () {
+  var kategoriSel = document.getElementById('kategori_fasilitas_select');
+  var fasilitasSel = document.getElementById('id_fasilitas') || document.querySelector('select[name="fasilitas"]');
+  var formMain = document.getElementById('reservasi-form-main');
+  if (!kategoriSel || !fasilitasSel) return;
+
+  var rawData = {{ fasilitas_json|default:"[]"|safe }};
+  var fasilitasItems = [];
+
+  if (Array.isArray(rawData) && rawData.length > 0) {
+    fasilitasItems = rawData;
+  } else {
+    /* Fallback: parse dari option HTML yang di-render Django */
+    Array.from(fasilitasSel.options).forEach(function (opt) {
+      if (!opt.value) return;
+      var name = opt.textContent.trim();
+      var upper = name.toUpperCase();
+      var kat = 'LAINNYA';
+      if (upper.indexOf('KELAS') !== -1) kat = 'KELAS';
+      else if (upper.indexOf('LAB') !== -1 || upper.indexOf('SIMULATOR') !== -1) kat = 'LABORATORIUM';
+      fasilitasItems.push({
+        id: parseInt(opt.value, 10),
+        nama_fasilitas: name,
+        kategori: kat
+      });
+    });
+  }
+
+  function getGroupCategory(kategori, nama) {
+    var str = ((kategori || '') + ' ' + (nama || '')).toUpperCase();
+    if (str.indexOf('KELAS') !== -1) return 'KELAS';
+    if (str.indexOf('LAB') !== -1 || str.indexOf('SIMULATOR') !== -1) return 'LAB';
+    return 'LAINNYA';
+  }
+
+  var initialSelectedId = "{{ form.fasilitas.value|default:'' }}" || fasilitasSel.value;
+
+  function populateFasilitas(categoryGroup, selectedIdToKeep) {
+    fasilitasSel.innerHTML = '';
+
+    var filtered = fasilitasItems;
+    if (categoryGroup && categoryGroup !== 'ALL') {
+      filtered = fasilitasItems.filter(function (f) {
+        return getGroupCategory(f.kategori, f.nama_fasilitas) === categoryGroup;
+      });
+    }
+
+    var defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+
+    if (!categoryGroup) {
+      defaultOpt.textContent = '-- Pilih Kategori Terlebih Dahulu --';
+      fasilitasSel.appendChild(defaultOpt);
+      fasilitasSel.disabled = true;
+      return;
+    }
+
+    fasilitasSel.disabled = false;
+    defaultOpt.textContent = '-- Pilih Fasilitas Aktif --';
+    fasilitasSel.appendChild(defaultOpt);
+
+    if (filtered.length === 0) {
+      defaultOpt.textContent = '-- Tidak ada fasilitas pada kategori ini --';
+      return;
+    }
+
+    filtered.forEach(function (f) {
+      var opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = f.nama_fasilitas;
+      if (selectedIdToKeep && String(selectedIdToKeep) === String(f.id)) {
+        opt.selected = true;
+      }
+      fasilitasSel.appendChild(opt);
+    });
+  }
+
+  /* Restore kategori saat form load jika sudah ada fasilitas terpilih */
+  if (initialSelectedId) {
+    var matched = fasilitasItems.find(function (f) {
+      return String(f.id) === String(initialSelectedId);
+    });
+    if (matched) {
+      var group = getGroupCategory(matched.kategori, matched.nama_fasilitas);
+      kategoriSel.value = group;
+      populateFasilitas(group, initialSelectedId);
+    } else {
+      kategoriSel.value = 'ALL';
+      populateFasilitas('ALL', initialSelectedId);
+    }
+  } else {
+    populateFasilitas('', null);
+  }
+
+  /* Listener saat user mengubah kategori */
+  kategoriSel.addEventListener('change', function () {
+    populateFasilitas(this.value, null);
+  });
+
+  /* Pastikan select tidak disabled saat submit */
+  if (formMain) {
+    formMain.addEventListener('submit', function () {
+      fasilitasSel.disabled = false;
+    });
+  }
 })();
 </script>
 {% endblock %}

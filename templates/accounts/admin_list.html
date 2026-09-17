@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Kelola Akun Admin{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Kelola Akun Admin</h1>
+  <p>Daftar seluruh akun Admin yang berwenang mengajukan dan mengelola reservasi sarana dan prasarana BP3IP.</p>
+</div>
+
+<div class="page-actions">
+  <a class="button" href="{% url 'admin_create' %}">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path
+        d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+    </svg>
+    Tambah Akun Admin Baru
+  </a>
+</div>
+
+<!-- Form Pencarian -->
+<div class="card" style="margin-bottom: 16px; padding: 16px 20px;">
+  <form method="get" action="" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 220px;">
+      <label style="font-size: 13px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;"
+        for="id-search-admin">Cari Akun Admin</label>
+      <input id="id-search-admin" type="text" name="q" value="{{ q }}"
+        placeholder="Username, nama lengkap, atau email..." style="width: 100%; margin: 0;">
+    </div>
+    <button type="submit" class="button" style="padding: 10px 20px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 6px;">
+        <path
+          d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+      </svg>
+      Cari
+    </button>
+    {% if q %}
+    <a class="button secondary" href="{% url 'admin_list' %}" style="padding: 10px 16px;">Reset</a>
+    {% endif %}
+  </form>
+  {% if q %}
+  <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted);">
+    Menampilkan hasil pencarian untuk: <strong>"{{ q }}"</strong>
+    &mdash; {{ page_obj.paginator.count }} akun ditemukan.
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Nama Lengkap</th>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Tanggal Dibuat</th>
+          <th>Login Terakhir</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for admin in admin_users %}
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span
+                style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--primary-light, #e8f0fe); color: var(--primary); font-weight: 700; font-size: 12px;">
+                {{ admin.nama|slice:":1"|upper|default:"A" }}
+              </span>
+              <strong>{{ admin.username }}</strong>
+            </div>
+          </td>
+          <td>{{ admin.nama }}</td>
+          <td>
+            <a href="mailto:{{ admin.email }}" style="color: var(--primary); text-decoration: none;">
+              {{ admin.email }}
+            </a>
+          </td>
+          <td>
+            {% if admin.is_active %}
+            <span class="badge badge-aktif">Aktif</span>
+            {% else %}
+            <span class="badge badge-nonaktif">Nonaktif</span>
+            {% endif %}
+          </td>
+          <td>{{ admin.created_at|date:"d M Y, H:i" }}</td>
+          <td>
+            {% if admin.last_login %}
+            {{ admin.last_login|date:"d M Y, H:i" }}
+            {% else %}
+            <span style="color: var(--text-muted);">&ndash;</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+                </svg>
+              </div>
+              <div class="empty-state-title">
+                {% if q %}Tidak ada akun yang cocok dengan "{{ q }}"{% else %}Belum ada akun Admin{% endif %}
+              </div>
+              <div class="empty-state-desc">
+                {% if q %}Coba kata kunci lain atau <a href="{% url 'admin_list' %}">tampilkan semua akun</a>.{% else
+                %}Tambahkan akun Admin baru agar staf dapat mengajukan reservasi sarana dan prasarana.{% endif %}
+              </div>
+              {% if not q %}
+              <a class="button" href="{% url 'admin_create' %}">Tambah Akun Admin</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Navigasi Pagination -->
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div
+    style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0 4px; flex-wrap: wrap; gap: 8px;">
+    <div style="font-size: 13px; color: var(--text-muted);">
+      Halaman {{ page_obj.number }} dari {{ page_obj.paginator.num_pages }}
+      &mdash; Total {{ page_obj.paginator.count }} akun Admin
+    </div>
+    <div style="display: flex; gap: 6px; align-items: center;">
+      {% if page_obj.has_previous %}
+      <a class="button secondary" style="padding: 6px 14px; font-size: 13px;"
+        href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.previous_page_number }}">&larr; Sebelumnya</a>
+      {% else %}
+      <span class="button secondary"
+        style="padding: 6px 14px; font-size: 13px; opacity: 0.4; cursor: not-allowed;">&larr; Sebelumnya</span>
+      {% endif %}
+
+      <span style="font-size: 13px; font-weight: 600; padding: 0 8px; color: var(--text);">
+        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+      <a class="button secondary" style="padding: 6px 14px; font-size: 13px;"
+        href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.next_page_number }}">Selanjutnya &rarr;</a>
+      {% else %}
+      <span class="button secondary"
+        style="padding: 6px 14px; font-size: 13px; opacity: 0.4; cursor: not-allowed;">Selanjutnya &rarr;</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
