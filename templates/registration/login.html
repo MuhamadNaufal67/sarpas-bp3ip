@@ -1,6 +1,7 @@
 {% load static %}
 <!doctype html>
 <html lang="id">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,13 +16,15 @@
     })();
   </script>
 </head>
+
 <body class="login-body">
 
   <!-- Theme Toggle (top-right, standalone) -->
   <button id="login-theme-toggle" class="login-theme-btn" aria-label="Ganti Tema Tampilan" title="Ganti Tema Tampilan">
     <span id="login-theme-icon">
       <!-- Icon will be set by JS -->
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="5"></circle>
         <line x1="12" y1="1" x2="12" y2="3"></line>
         <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -52,9 +55,7 @@
       <!-- Logo & Branding -->
       <div class="login-brand">
         <div class="login-logo">
-          <img src="{% static 'images/LOGO_BP3IP.png' %}"
-               alt="Logo BP3IP"
-               onerror="this.style.display='none'">
+          <img src="{% static 'images/LOGO_BP3IP.png' %}" alt="Logo BP3IP" onerror="this.style.display='none'">
         </div>
         <h1 class="login-title">SARPAS BP3IP</h1>
         <p class="login-subtitle">
@@ -98,17 +99,10 @@
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
             </span>
-            <input
-              type="text"
-              name="{{ form.username.html_name }}"
-              id="{{ form.username.id_for_label }}"
+            <input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}"
               class="login-input {% if form.username.errors %}login-input-error{% endif %}"
-              placeholder="Masukkan nama pengguna"
-              autocomplete="username"
-              value="{{ form.username.value|default:'' }}"
-              autofocus
-              required
-            >
+              placeholder="Masukkan nama pengguna" autocomplete="username" value="{{ form.username.value|default:'' }}"
+              autofocus required>
           </div>
           {% if form.username.errors %}
           <div class="login-field-error" role="alert">
@@ -134,28 +128,23 @@
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
               </svg>
             </span>
-            <input
-              type="password"
-              name="{{ form.password.html_name }}"
-              id="{{ form.password.id_for_label }}"
+            <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}"
               class="login-input login-input-password {% if form.password.errors %}login-input-error{% endif %}"
-              placeholder="Masukkan kata sandi"
-              autocomplete="current-password"
-              required
-            >
-            <button type="button"
-                    class="login-input-icon login-input-icon-right login-toggle-password"
-                    id="toggle-password-btn"
-                    aria-label="Tampilkan/sembunyikan kata sandi"
-                    tabindex="0">
+              placeholder="Masukkan kata sandi" autocomplete="current-password" required>
+            <button type="button" class="login-input-icon login-input-icon-right login-toggle-password"
+              id="toggle-password-btn" aria-label="Tampilkan/sembunyikan kata sandi" tabindex="0">
               <!-- Eye open icon -->
-              <svg id="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg id="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
               <!-- Eye closed icon (hidden by default) -->
-              <svg id="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <svg id="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" style="display:none">
+                <path
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                </path>
                 <line x1="1" y1="1" x2="23" y2="23"></line>
               </svg>
             </button>
@@ -174,9 +163,10 @@
 
         <!-- Submit Button -->
         <button type="submit" class="login-btn" id="login-submit-btn">
-          <span id="login-btn-text">Masuk ke Sistem</span>
+          <span id="login-btn-text">Masuk</span>
           <span id="login-btn-spinner" class="login-spinner" style="display:none">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="spin-anim">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              class="spin-anim">
               <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
             </svg>
             Memproses...
@@ -272,4 +262,5 @@
   </script>
 
 </body>
+
 </html>

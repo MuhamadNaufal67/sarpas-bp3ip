@@ -22,6 +22,7 @@ urlpatterns = [
     path("pengajuan/<int:pk>/approve/", views.pengajuan_approve, name="pengajuan_approve"),
     path("pengajuan/<int:pk>/reject/", views.pengajuan_reject, name="pengajuan_reject"),
     path("notifikasi/", views.notifikasi_list, name="notifikasi_list"),
+    path("notifikasi/baca-semua/", views.notifikasi_baca_semua, name="notifikasi_baca_semua"),
     path("notifikasi/<int:pk>/baca/", views.notifikasi_baca, name="notifikasi_baca"),
     # Super Admin — Kelola Akun Admin
     path("kelola-akun/", views.admin_list, name="admin_list"),

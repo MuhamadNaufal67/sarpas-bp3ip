@@ -9,7 +9,7 @@
   --primary-hover: #124ec4;
   --primary-light: #eff4ff;
   --primary-border: #b2ccff;
-  --primary-dark: #0a2540;
+  --primary-dark: #2b649d;
 
   --background: #f8fafc;
   --surface: #ffffff;
@@ -43,13 +43,13 @@
   --info-text: #0369a1;
   --info-border: #7dd3fc;
 
-  --sidebar-bg: #0a2540;
-  --sidebar-surface: #103358;
-  --sidebar-hover: #153e6b;
+  --sidebar-bg: #3f7fbe;
+  --sidebar-surface: #427ebf;
+  --sidebar-hover: #4176ae;
   --sidebar-active: #155eef;
   --sidebar-text: #e2e8f0;
   --sidebar-muted: #94a3b8;
-  --sidebar-border: #1a426f;
+  --sidebar-border: #2e5a8b;
 
   --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
   --shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
@@ -107,8 +107,8 @@
   --info-text: #7dd3fc;
   --info-border: rgba(56, 189, 248, 0.3);
 
-  --sidebar-bg: #070d18;
-  --sidebar-surface: #0e182b;
+  --sidebar-bg: #223c6b;
+  --sidebar-surface: #39568b;
   --sidebar-hover: #15243e;
   --sidebar-active: #2563eb;
   --sidebar-text: #cbd5e1;
@@ -497,6 +497,11 @@ a:hover {
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s ease;
+}
+
+.btn-icon svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 /* Mobile hamburger only shows on mobile */
@@ -2157,6 +2162,7 @@ button.success:hover {
 }
 
 @media (max-width: 600px) {
+
   /* Form side by side becomes stacked */
   .form-field-row {
     flex-direction: column;

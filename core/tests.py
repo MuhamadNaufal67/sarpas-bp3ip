@@ -1,7 +1,8 @@
-from datetime import date, time
+from datetime import date, time, timedelta
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from .forms import ReservasiForm, fasilitas_tersedia
 from .models import Fasilitas, Notifikasi, Reservasi, User
@@ -215,5 +216,54 @@ class SarpasTestCase(TestCase):
         res_aud = self.client.get(reverse("audit_log_list"), {"q": "UJI_LOG"})
         self.assertEqual(res_aud.status_code, 200)
         self.assertContains(res_aud, "Pencarian log berhasil")
+
+    def test_super_admin_bisa_ajukan_dan_lihat_reservasi(self):
+        super_admin = User.objects.create_user(
+            username="superadmin_res", password="password-super-123", nama="Super Admin BP3IP",
+            email="superadmin_res@example.com", role=User.Role.SUPER_ADMIN,
+        )
+        self.client.login(username="superadmin_res", password="password-super-123")
+        
+        # Super admin dapat membuka form ajukan reservasi
+        response = self.client.get(reverse("reservasi_create"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ajukan Reservasi")
+
+        target_date = timezone.localdate() + timedelta(days=1)
+        if target_date.weekday() == 6:
+            target_date += timedelta(days=1)
+
+        # Super admin dapat submit reservasi
+        post_data = {
+            "fasilitas": self.fasilitas.pk,
+            "tanggal": target_date.strftime("%Y-%m-%d"),
+            "jam_mulai": "08:00",
+            "jam_selesai": "11:00",
+            "keperluan": "Rapat Koordinasi Super Admin",
+        }
+        res_post = self.client.post(reverse("reservasi_create"), post_data)
+        self.assertRedirects(res_post, reverse("reservasi_list"))
+
+        # Reservasi tersimpan di DB dengan pemohon super_admin
+        res_obj = Reservasi.objects.filter(pemohon=super_admin).first()
+        self.assertIsNotNone(res_obj)
+        self.assertEqual(res_obj.keperluan, "Rapat Koordinasi Super Admin")
+
+        # Super admin dapat melihat daftar Reservasi Saya
+        res_list = self.client.get(reverse("reservasi_list"))
+        self.assertEqual(res_list.status_code, 200)
+        self.assertContains(res_list, "Rapat Koordinasi Super Admin")
+
+    def test_notifikasi_baca_semua(self):
+        Notifikasi.objects.create(penerima=self.admin_user, judul="Notif 1", pesan="Pesan 1")
+        Notifikasi.objects.create(penerima=self.admin_user, judul="Notif 2", pesan="Pesan 2")
+        Notifikasi.objects.create(penerima=self.admin_user, judul="Notif 3", pesan="Pesan 3")
+        
+        self.assertEqual(self.admin_user.notifikasi.filter(status_baca=False).count(), 3)
+        self.client.login(username="admin1", password="password-kuat-123")
+        
+        res = self.client.post(reverse("notifikasi_baca_semua"), {"next": reverse("dashboard")})
+        self.assertRedirects(res, reverse("dashboard"))
+        self.assertEqual(self.admin_user.notifikasi.filter(status_baca=False).count(), 0)
 
 

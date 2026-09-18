@@ -163,7 +163,7 @@ def fasilitas_delete(request, pk):
     return redirect("fasilitas_list")
 
 
-@role_required(User.Role.ADMIN)
+@role_required(User.Role.ADMIN, User.Role.SUPER_ADMIN)
 def reservasi_list(request):
     """Daftar reservasi milik Admin yang sedang login, dengan search dan pagination."""
     qs = Reservasi.objects.filter(pemohon=request.user).select_related("fasilitas")
@@ -199,7 +199,7 @@ def _get_fasilitas_json():
     return json.dumps(list(fasilitas_qs))
 
 
-@role_required(User.Role.ADMIN)
+@role_required(User.Role.ADMIN, User.Role.SUPER_ADMIN)
 def reservasi_create(request):
     form = ReservasiForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -207,12 +207,14 @@ def reservasi_create(request):
             reservasi = form.save(commit=False)
             reservasi.pemohon = request.user
             reservasi.status = Reservasi.Status.PENDING
-            # Kunci baris yang ada agar generator aman dari race condition concurrent.
-            Reservasi.objects.select_for_update().filter(
-                kode_reservasi__startswith=None
-            ).count()  # force lock acquisition; actual count uses _generate_kode_reservasi
+            
+            # Lock baris reservasi terkait fasilitas ini untuk mencegah race condition
+            list(Reservasi.objects.select_for_update().filter(fasilitas=reservasi.fasilitas))
+            
+            # Generate kode reservasi secara aman
             reservasi.kode_reservasi = _generate_kode_reservasi(reservasi.fasilitas)
             reservasi.save()
+
         catat_audit(request, "AJUKAN", "Reservasi", reservasi,
                     f"Mengajukan reservasi {reservasi.fasilitas} pada {reservasi.tanggal}. Kode: {reservasi.kode_reservasi}")
         kirim_ke_atasan(
@@ -221,6 +223,7 @@ def reservasi_create(request):
         )
         messages.success(request, f"Pengajuan reservasi berhasil dikirim. Kode Reservasi Anda: {reservasi.kode_reservasi}")
         return redirect("reservasi_list")
+        
     return render(request, "reservations/form.html", {
         "form": form,
         "judul": "Ajukan Reservasi",
@@ -228,7 +231,7 @@ def reservasi_create(request):
     })
 
 
-@role_required(User.Role.ADMIN)
+@role_required(User.Role.ADMIN, User.Role.SUPER_ADMIN)
 def reservasi_update(request, pk):
     reservasi = get_object_or_404(Reservasi, pk=pk, pemohon=request.user)
     if reservasi.status not in [Reservasi.Status.DRAFT, Reservasi.Status.NEEDS_REVISION]:
@@ -446,7 +449,17 @@ def notifikasi_baca(request, pk):
     notifikasi = get_object_or_404(Notifikasi, pk=pk, penerima=request.user)
     notifikasi.status_baca = True
     notifikasi.save(update_fields=["status_baca"])
-    return redirect("notifikasi_list")
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "notifikasi_list"
+    return redirect(next_url)
+
+
+@require_POST
+@login_required
+def notifikasi_baca_semua(request):
+    request.user.notifikasi.filter(status_baca=False).update(status_baca=True)
+    messages.success(request, "Semua notifikasi telah ditandai sebagai sudah dibaca.")
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "notifikasi_list"
+    return redirect(next_url)
 
 
 # ── Super Admin: Kelola Akun Admin ─────────────────────────────────────────
