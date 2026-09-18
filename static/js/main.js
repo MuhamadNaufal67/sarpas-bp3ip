@@ -151,7 +151,42 @@ function updateCollapseBtnIcon(isCollapsed) {
 }
 
 /* ==========================================================================
+<<<<<<< HEAD
    3. NOTIFICATION DROPDOWN
+=======
+   3. ACTIVE NAV LINK HIGHLIGHT
+   ========================================================================== */
+function initActiveNavLink() {
+  const currentPath = window.location.pathname;
+  const navLinks = Array.from(document.querySelectorAll(".nav-link"));
+
+  let bestMatch = null;
+  let bestMatchLength = 0;
+
+  navLinks.forEach(function (link) {
+    link.classList.remove("active");
+    const href = link.getAttribute("href");
+    if (!href) return;
+
+    if (currentPath === href) {
+      bestMatch = link;
+      bestMatchLength = Infinity;
+    } else if (bestMatchLength !== Infinity && href !== "/" && currentPath.startsWith(href)) {
+      if (href.length > bestMatchLength) {
+        bestMatch = link;
+        bestMatchLength = href.length;
+      }
+    }
+  });
+
+  if (bestMatch) {
+    bestMatch.classList.add("active");
+  }
+}
+
+/* ==========================================================================
+   4. NOTIFICATION DROPDOWN
+>>>>>>> 1ada39c8413235a511af2e6066e1b5262f3bb255
    ========================================================================== */
 function initNotifications() {
   const bellBtn = document.getElementById("notification-bell-btn");

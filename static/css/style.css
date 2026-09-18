@@ -2169,6 +2169,7 @@ button.success:hover {
 }
 
 @media (max-width: 600px) {
+
   /* Form side by side becomes stacked */
   .form-field-row {
     flex-direction: column;
