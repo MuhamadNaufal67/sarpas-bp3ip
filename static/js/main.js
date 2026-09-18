@@ -10,7 +10,6 @@ document.addEventListener("DOMContentLoaded", function () {
   initModals();
   initFormValidation();
   initAlertDismiss();
-  initActiveNavLink();
 });
 
 /* ==========================================================================
@@ -152,40 +151,68 @@ function updateCollapseBtnIcon(isCollapsed) {
 }
 
 /* ==========================================================================
-   3. ACTIVE NAV LINK HIGHLIGHT
-   ========================================================================== */
-function initActiveNavLink() {
-  const currentPath = window.location.pathname;
-  const navLinks = document.querySelectorAll(".nav-link");
-
-  navLinks.forEach(function (link) {
-    const href = link.getAttribute("href");
-    if (href && currentPath.startsWith(href) && href !== "/") {
-      link.classList.add("active");
-    } else if (href === "/" && currentPath === "/") {
-      link.classList.add("active");
-    }
-  });
-}
-
-/* ==========================================================================
-   4. NOTIFICATION DROPDOWN
+   3. NOTIFICATION DROPDOWN
    ========================================================================== */
 function initNotifications() {
   const bellBtn = document.getElementById("notification-bell-btn");
   const dropdown = document.getElementById("notification-dropdown");
+  const csrfToken = document.querySelector("#notification-mark-read-form input[name='csrfmiddlewaretoken']");
+  let markingInProgress = false;
 
   if (!bellBtn || !dropdown) return;
 
   bellBtn.addEventListener("click", function (e) {
     e.stopPropagation();
-    dropdown.classList.toggle("active");
+    const willOpen = !dropdown.classList.contains("active");
+    dropdown.classList.toggle("active", willOpen);
+    bellBtn.setAttribute("aria-expanded", String(willOpen));
+
+    if (willOpen && document.getElementById("notification-badge-dot")) {
+      markAllNotificationsRead();
+    }
   });
+
+  function markAllNotificationsRead() {
+    const markReadUrl = bellBtn.dataset.markReadUrl;
+    if (!markReadUrl || !csrfToken || markingInProgress) return;
+
+    markingInProgress = true;
+    fetch(markReadUrl, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrfToken.value,
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      credentials: "same-origin",
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error("Gagal menandai notifikasi sebagai sudah dibaca.");
+        return response.json();
+      })
+      .then(function () {
+        const bellBadge = document.getElementById("notification-badge-dot");
+        const unreadLabel = document.getElementById("notification-unread-label");
+        if (bellBadge) bellBadge.remove();
+        if (unreadLabel) unreadLabel.remove();
+        dropdown.querySelectorAll(".dropdown-item.unread").forEach(function (item) {
+          item.classList.remove("unread");
+        });
+        bellBtn.setAttribute("aria-label", "Notifikasi");
+        bellBtn.setAttribute("title", "Notifikasi");
+      })
+      .catch(function () {
+        // Biarkan badge tetap ada agar pengguna tahu notifikasi belum diproses.
+      })
+      .finally(function () {
+        markingInProgress = false;
+      });
+  }
 
   // Close dropdown when clicking outside
   document.addEventListener("click", function (e) {
     if (!dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
       dropdown.classList.remove("active");
+      bellBtn.setAttribute("aria-expanded", "false");
     }
   });
 
@@ -193,6 +220,7 @@ function initNotifications() {
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && dropdown.classList.contains("active")) {
       dropdown.classList.remove("active");
+      bellBtn.setAttribute("aria-expanded", "false");
     }
   });
 }

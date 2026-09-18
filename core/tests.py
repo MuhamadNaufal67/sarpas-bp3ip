@@ -98,6 +98,20 @@ class SarpasTestCase(TestCase):
         own.refresh_from_db()
         self.assertTrue(own.status_baca)
 
+    def test_tandai_semua_notifikasi_dibaca_hanya_milik_pengguna(self):
+        milik_admin = Notifikasi.objects.create(penerima=self.admin_user, judul="Untuk Admin", pesan="Pesan admin")
+        milik_atasan = Notifikasi.objects.create(penerima=self.atasan, judul="Untuk Atasan", pesan="Pesan atasan")
+        self.client.login(username="admin1", password="password-kuat-123")
+
+        response = self.client.post(reverse("notifikasi_tandai_semua_dibaca"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertJSONEqual(response.content, {"marked_count": 1})
+        milik_admin.refresh_from_db()
+        milik_atasan.refresh_from_db()
+        self.assertTrue(milik_admin.status_baca)
+        self.assertFalse(milik_atasan.status_baca)
+
     def test_dashboard_admin_dan_atasan_memuat_jadwal(self):
         self.buat_reservasi(status=Reservasi.Status.APPROVED)
         self.client.login(username="admin1", password="password-kuat-123")
@@ -184,6 +198,31 @@ class SarpasTestCase(TestCase):
         self.assertContains(response, "Kelas 101")
         self.assertContains(response, "Lab Simulator Navigasi")
         self.assertIn("fasilitas_json", response.context)
+
+    def test_sidebar_hanya_menandai_ajukan_reservasi_saat_membuka_form(self):
+        self.client.login(username="admin1", password="password-kuat-123")
+        response = self.client.get(reverse("reservasi_create"))
+
+        self.assertContains(
+            response,
+            f'href="{reverse("reservasi_create")}" class="nav-link active"',
+        )
+        self.assertContains(
+            response,
+            f'href="{reverse("reservasi_list")}" class="nav-link"',
+        )
+        self.assertNotContains(
+            response,
+            f'href="{reverse("reservasi_list")}" class="nav-link active"',
+        )
+
+    def test_tombol_sidebar_mobile_memuat_logo_bp3ip(self):
+        self.client.login(username="admin1", password="password-kuat-123")
+        response = self.client.get(reverse("reservasi_create"))
+
+        self.assertContains(response, 'id="mobile-menu-toggle"')
+        self.assertContains(response, 'class="mobile-menu-logo"')
+        self.assertContains(response, 'src="/static/images/LOGO_BP3IP.png"')
 
     def test_search_dan_pagination_tabel_tabel(self):
         super_admin = User.objects.create_user(
