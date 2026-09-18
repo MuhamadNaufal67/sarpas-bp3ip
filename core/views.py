@@ -6,6 +6,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -460,6 +461,14 @@ def notifikasi_baca_semua(request):
     messages.success(request, "Semua notifikasi telah ditandai sebagai sudah dibaca.")
     next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "notifikasi_list"
     return redirect(next_url)
+
+
+@require_POST
+@login_required
+def notifikasi_tandai_semua_dibaca(request):
+    """Tandai notifikasi belum dibaca milik pengguna yang sedang login."""
+    jumlah_ditandai = request.user.notifikasi.filter(status_baca=False).update(status_baca=True)
+    return JsonResponse({"marked_count": jumlah_ditandai})
 
 
 # ── Super Admin: Kelola Akun Admin ─────────────────────────────────────────

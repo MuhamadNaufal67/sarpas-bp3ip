@@ -504,6 +504,13 @@ a:hover {
   display: none;
 }
 
+.mobile-menu-logo {
+  display: block;
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
 .btn-icon:hover {
   background: var(--surface-hover);
   color: var(--primary);
@@ -531,6 +538,11 @@ a:hover {
 
 .notification-bell-btn {
   position: relative;
+}
+
+.notification-bell-icon {
+  display: block;
+  flex: 0 0 auto;
 }
 
 .notification-badge-dot {
