@@ -1,6 +1,7 @@
 {% load static %}
 <!doctype html>
 <html lang="id">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,6 +9,7 @@
   <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260918-2">
   <script src="{% static 'js/main.js' %}?v=20260918-3" defer></script>
 </head>
+
 <body>
   {% if user.is_authenticated %}
   <div class="sidebar-overlay"></div>
@@ -25,16 +27,15 @@
           </div>
         </a>
         <!-- Sidebar Collapse / Expand Toggle -->
-        <button id="sidebar-collapse-btn"
-                class="sidebar-collapse-btn"
-                aria-label="Tutup sidebar"
-                title="Tutup sidebar">
+        <button id="sidebar-collapse-btn" class="sidebar-collapse-btn" aria-label="Tutup sidebar" title="Tutup sidebar">
           <!-- Chevron Left (expanded state) -->
-          <svg id="sidebar-chevron-left" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg id="sidebar-chevron-left" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
           <!-- Chevron Right (collapsed state, hidden by default) -->
-          <svg id="sidebar-chevron-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+          <svg id="sidebar-chevron-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none">
             <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
         </button>
@@ -44,7 +45,9 @@
         <!-- Dashboard -->
         <a href="{% url 'dashboard' %}" class="nav-link{% if request.resolver_match.url_name == 'dashboard' %} active{% endif %}" data-tooltip="Dashboard">
           <span class="nav-icon">
-            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+            <svg viewBox="0 0 24 24">
+              <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+            </svg>
           </span>
           <span class="nav-text">Dashboard</span>
         </a>
@@ -53,14 +56,19 @@
         <!-- Ajukan Reservasi -->
         <a href="{% url 'reservasi_create' %}" class="nav-link{% if request.resolver_match.url_name == 'reservasi_create' %} active{% endif %}" data-tooltip="Ajukan Reservasi">
           <span class="nav-icon">
-            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            <svg viewBox="0 0 24 24">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+            </svg>
           </span>
           <span class="nav-text">Ajukan Reservasi</span>
         </a>
         <!-- Reservasi Saya -->
         <a href="{% url 'reservasi_list' %}" class="nav-link{% if request.resolver_match.url_name == 'reservasi_list' or request.resolver_match.url_name == 'reservasi_update' %} active{% endif %}" data-tooltip="Reservasi Saya">
           <span class="nav-icon">
-            <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
+            </svg>
           </span>
           <span class="nav-text">Reservasi Saya</span>
         </a>
@@ -69,7 +77,10 @@
         <!-- Pengajuan Reservasi -->
         <a href="{% url 'pengajuan_list' %}" class="nav-link{% if request.resolver_match.url_name == 'pengajuan_list' or request.resolver_match.url_name == 'pengajuan_detail' %} active{% endif %}" data-tooltip="Pengajuan Reservasi">
           <span class="nav-icon">
-            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+            </svg>
           </span>
           <span class="nav-text">Pengajuan Reservasi</span>
         </a>
@@ -78,42 +89,59 @@
         <!-- Ajukan Reservasi -->
         <a href="{% url 'reservasi_create' %}" class="nav-link" data-tooltip="Ajukan Reservasi">
           <span class="nav-icon">
-            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            <svg viewBox="0 0 24 24">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+            </svg>
           </span>
           <span class="nav-text">Ajukan Reservasi</span>
         </a>
         <!-- Reservasi Saya -->
         <a href="{% url 'reservasi_list' %}" class="nav-link" data-tooltip="Reservasi Saya">
           <span class="nav-icon">
-            <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
+            </svg>
           </span>
           <span class="nav-text">Reservasi Saya</span>
         </a>
         <!-- Kelola Fasilitas -->
         <a href="{% url 'fasilitas_list' %}" class="nav-link{% if request.resolver_match.url_name == 'fasilitas_list' or request.resolver_match.url_name == 'fasilitas_create' or request.resolver_match.url_name == 'fasilitas_detail' or request.resolver_match.url_name == 'fasilitas_update' %} active{% endif %}" data-tooltip="Kelola Fasilitas">
           <span class="nav-icon">
-            <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z" />
+            </svg>
           </span>
           <span class="nav-text">Kelola Fasilitas</span>
         </a>
         <!-- Kelola Reservasi -->
         <a href="{% url 'reservasi_manage' %}" class="nav-link{% if request.resolver_match.url_name == 'reservasi_manage' %} active{% endif %}" data-tooltip="Kelola Reservasi">
           <span class="nav-icon">
-            <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V9h14v10zm0-12H5V5h14v2z"/></svg>
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V9h14v10zm0-12H5V5h14v2z" />
+            </svg>
           </span>
           <span class="nav-text">Kelola Reservasi</span>
         </a>
         <!-- Audit Log -->
         <a href="{% url 'audit_log_list' %}" class="nav-link{% if request.resolver_match.url_name == 'audit_log_list' %} active{% endif %}" data-tooltip="Audit Log">
           <span class="nav-icon">
-            <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
+            </svg>
           </span>
           <span class="nav-text">Audit Log</span>
         </a>
         <!-- Kelola Akun Admin -->
         <a href="{% url 'admin_list' %}" class="nav-link{% if request.resolver_match.url_name == 'admin_list' or request.resolver_match.url_name == 'admin_create' %} active{% endif %}" data-tooltip="Kelola Akun Admin">
           <span class="nav-icon">
-            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+            </svg>
           </span>
           <span class="nav-text">Kelola Akun Admin</span>
         </a>
@@ -125,7 +153,10 @@
           {% csrf_token %}
           <button class="logout-btn" type="submit" data-tooltip="Logout">
             <span class="nav-icon">
-              <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+              </svg>
             </span>
             <span class="nav-text">Logout</span>
           </button>
@@ -138,8 +169,12 @@
       <header class="header">
         <div class="header-left">
           <!-- Mobile Hamburger (only visible on mobile) -->
-          <button id="mobile-menu-toggle" class="btn-icon btn-icon-mobile" aria-label="Buka sidebar" title="Buka sidebar">
-            <img class="mobile-menu-logo" src="{% static 'images/LOGO_BP3IP.png' %}" alt="">
+          <button id="mobile-menu-toggle" class="btn-icon btn-icon-mobile" aria-label="Buka Menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
           </button>
           <h1>{% block page_title %}SARPAS BP3IP{% endblock %}</h1>
         </div>
@@ -148,17 +183,22 @@
           <!-- Dark Mode Toggle -->
           <button id="theme-toggle" class="btn-icon" aria-label="Ganti Tema Tampilan">
             <span id="theme-icon-container">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
             </span>
           </button>
 
           <!-- Top-Right Notification Bell & Dropdown -->
           <div class="notification-wrapper">
-<<<<<<< HEAD
-            <button id="notification-bell-btn" class="btn-icon notification-bell-btn" aria-label="Notifikasi{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}" title="Notifikasi{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}" aria-expanded="false" data-mark-read-url="{% url 'notifikasi_tandai_semua_dibaca' %}">
-              <svg class="notification-bell-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm6-5v-5.5c0-3.37-1.82-6.2-5-6.95V3.5a1 1 0 0 0-2 0v1.05c-3.18.75-5 3.58-5 6.95V17l-2 2v1h16v-1l-2-2Z" />
-=======
             <button id="notification-bell-btn" class="btn-icon notification-bell-btn" aria-label="Notifikasi{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}" title="Notifikasi{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
@@ -186,7 +226,9 @@
                   <form method="post" action="{% url 'notifikasi_baca_semua' %}" style="display: inline; margin: 0;">
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                    <button type="submit" class="button-link" style="font-size: 11px; background: none; border: none; color: var(--primary); cursor: pointer; padding: 0; text-decoration: underline;">Tandai semua dibaca</button>
+                    <button type="submit" class="button-link"
+                      style="font-size: 11px; background: none; border: none; color: var(--primary); cursor: pointer; padding: 0; text-decoration: underline;">Tandai
+                      semua dibaca</button>
                   </form>
                   {% endif %}
                 </div>
@@ -194,7 +236,8 @@
               </div>
               <div class="dropdown-body">
                 {% for item in user.notifikasi.all|slice:":5" %}
-                <div class="dropdown-item {% if not item.status_baca %}unread{% endif %}" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                <div class="dropdown-item {% if not item.status_baca %}unread{% endif %}"
+                  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
                   <div style="flex: 1; min-width: 0;">
                     <div class="dropdown-item-title">{{ item.judul }}</div>
                     <div class="dropdown-item-desc">{{ item.pesan|truncatechars:80 }}</div>
@@ -204,8 +247,10 @@
                   <form method="post" action="{% url 'notifikasi_baca' item.pk %}" style="margin: 0; flex-shrink: 0;">
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                    <button type="submit" title="Tandai sudah dibaca" aria-label="Tandai sudah dibaca" style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px 8px; cursor: pointer; color: var(--primary); font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <button type="submit" title="Tandai sudah dibaca" aria-label="Tandai sudah dibaca"
+                      style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px 8px; cursor: pointer; color: var(--primary); font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                       Baca
@@ -216,7 +261,8 @@
                 {% empty %}
                 <div class="empty-state" style="padding: 24px 16px;">
                   <div class="empty-state-title" style="font-size: 14px;">Belum ada notifikasi</div>
-                  <div class="empty-state-desc" style="font-size: 12px; margin-bottom: 0;">Pemberitahuan aktivitas akan muncul di sini.</div>
+                  <div class="empty-state-desc" style="font-size: 12px; margin-bottom: 0;">Pemberitahuan aktivitas akan
+                    muncul di sini.</div>
                 </div>
                 {% endfor %}
               </div>
@@ -240,25 +286,25 @@
       </header>
 
       <main>
-  {% else %}
-  <main>
-  {% endif %}
+        {% else %}
+        <main>
+          {% endif %}
 
-    <!-- Flash Messages Container -->
-    {% if messages %}
-    <div class="message-container">
-      {% for message in messages %}
-      <div class="message {{ message.tags }}">
-        <span>{{ message }}</span>
-      </div>
-      {% endfor %}
-    </div>
-    {% endif %}
+          <!-- Flash Messages Container -->
+          {% if messages %}
+          <div class="message-container">
+            {% for message in messages %}
+            <div class="message {{ message.tags }}">
+              <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
 
-    {% block content %}{% endblock %}
-  </main>
+          {% block content %}{% endblock %}
+        </main>
 
-  {% if user.is_authenticated %}
+        {% if user.is_authenticated %}
     </section>
   </div>
 
@@ -279,4 +325,5 @@
   </div>
   {% endif %}
 </body>
+
 </html>
