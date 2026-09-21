@@ -199,12 +199,8 @@
 
           <!-- Top-Right Notification Bell & Dropdown -->
           <div class="notification-wrapper">
-            <button id="notification-bell-btn" class="btn-icon notification-bell-btn" aria-label="Notifikasi{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}" title="Notifikasi{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
-                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
->>>>>>> 1ada39c8413235a511af2e6066e1b5262f3bb255
-              </svg>
+            <button type="button" id="notification-bell-btn" class="btn-icon notification-bell-btn" aria-label="Notifikasi{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}" title="Notifikasi{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}">
+              <span class="notification-bell-icon" aria-hidden="true">&#128276;</span>
               {% if unread_notification_count %}
               <span id="notification-badge-dot" class="notification-badge-dot">{{ unread_notification_count }}</span>
               {% endif %}
@@ -215,24 +211,9 @@
             <div id="notification-dropdown" class="notification-dropdown">
               <div class="dropdown-header">
                 <h4>Notifikasi</h4>
-<<<<<<< HEAD
                 {% if unread_notification_count %}
                 <span id="notification-unread-label" class="badge badge-pending">{{ unread_notification_count }} baru</span>
                 {% endif %}
-=======
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  {% if unread_notification_count %}
-                  <span class="badge badge-pending">{{ unread_notification_count }} baru</span>
-                  <form method="post" action="{% url 'notifikasi_baca_semua' %}" style="display: inline; margin: 0;">
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                    <button type="submit" class="button-link"
-                      style="font-size: 11px; background: none; border: none; color: var(--primary); cursor: pointer; padding: 0; text-decoration: underline;">Tandai
-                      semua dibaca</button>
-                  </form>
-                  {% endif %}
-                </div>
->>>>>>> 1ada39c8413235a511af2e6066e1b5262f3bb255
               </div>
               <div class="dropdown-body">
                 {% for item in user.notifikasi.all|slice:":5" %}

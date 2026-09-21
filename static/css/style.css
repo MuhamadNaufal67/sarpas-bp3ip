@@ -541,8 +541,16 @@ a:hover {
 }
 
 .notification-bell-icon {
-  display: block;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
+  color: var(--text);
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif;
+  font-size: 20px;
+  line-height: 1;
 }
 
 .notification-badge-dot {
