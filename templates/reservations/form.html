@@ -3,9 +3,9 @@
 {% block page_title %}{{ judul }}{% endblock %}
 
 {% block content %}
-<div class="reservasi-form-page">
+<div class="reservasi-form-page" style="max-width: 760px; margin: 0 auto; width: 100%;">
 
-  <div class="page-heading">
+  <div class="page-heading" style="text-align: center; margin-bottom: 24px;">
     <h1>{{ judul }}</h1>
     <p>Pemohon: <strong>{{ user.nama|default:user.username }}</strong>. Hanya fasilitas aktif yang dapat dipilih untuk reservasi.</p>
   </div>
@@ -140,7 +140,7 @@
           {{ form.keterangan }}
         </div>
 
-        <div class="form-actions">
+        <div class="form-actions" style="justify-content: center;">
           <button type="submit" class="button">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
             Kirim Pengajuan
@@ -152,6 +152,8 @@
     </div>
   </div>
 </div>
+
+{{ fasilitas_list_data|default:"[]"|json_script:"fasilitas-data" }}
 
 <script>
 /* ---- Jam Select — 30 menit interval, 07:00 – 18:00 ---- */
@@ -229,7 +231,15 @@
   var formMain = document.getElementById('reservasi-form-main');
   if (!kategoriSel || !fasilitasSel) return;
 
-  var rawData = {{ fasilitas_json|default:"[]"|safe }};
+  var dataEl = document.getElementById('fasilitas-data');
+  var rawData = [];
+  if (dataEl) {
+    try {
+      rawData = JSON.parse(dataEl.textContent);
+    } catch (e) {
+      rawData = [];
+    }
+  }
   var fasilitasItems = [];
 
   if (Array.isArray(rawData) && rawData.length > 0) {

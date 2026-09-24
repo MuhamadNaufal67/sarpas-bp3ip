@@ -5,10 +5,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import ProtectedError, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .decorators import role_required
@@ -49,7 +50,10 @@ def login_view(request):
     form = AuthenticationForm(request, data=request.POST or None)
     if request.method == "POST" and form.is_valid():
         login(request, form.get_user())
-        return redirect(request.GET.get("next") or "dashboard")
+        next_url = request.POST.get("next") or request.GET.get("next")
+        if not (next_url and url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()})):
+            next_url = "dashboard"
+        return redirect(next_url)
     return render(request, "registration/login.html", {"form": form})
 
 
@@ -159,7 +163,7 @@ def fasilitas_delete(request, pk):
         fasilitas.delete()
         catat_audit(request, "HAPUS", "Fasilitas", fasilitas, f"Menghapus fasilitas {nama}.")
         messages.success(request, "Fasilitas berhasil dihapus.")
-    except Exception:
+    except ProtectedError:
         messages.error(request, "Fasilitas tidak dapat dihapus karena sudah dipakai dalam reservasi.")
     return redirect("fasilitas_list")
 
@@ -191,13 +195,16 @@ def reservasi_list(request):
     })
 
 
-def _get_fasilitas_json():
-    fasilitas_qs = (
+def _get_fasilitas_list():
+    return list(
         Fasilitas.objects.filter(status=Fasilitas.Status.AKTIF)
         .order_by("nama_fasilitas")
         .values("id", "nama_fasilitas", "kategori", "kapasitas", "lokasi")
     )
-    return json.dumps(list(fasilitas_qs))
+
+
+def _get_fasilitas_json():
+    return json.dumps(_get_fasilitas_list())
 
 
 @role_required(User.Role.ADMIN, User.Role.SUPER_ADMIN)
@@ -225,10 +232,12 @@ def reservasi_create(request):
         messages.success(request, f"Pengajuan reservasi berhasil dikirim. Kode Reservasi Anda: {reservasi.kode_reservasi}")
         return redirect("reservasi_list")
         
+    fas_list = _get_fasilitas_list()
     return render(request, "reservations/form.html", {
         "form": form,
         "judul": "Ajukan Reservasi",
-        "fasilitas_json": _get_fasilitas_json(),
+        "fasilitas_json": json.dumps(fas_list),
+        "fasilitas_list_data": fas_list,
     })
 
 
@@ -249,10 +258,12 @@ def reservasi_update(request, pk):
         kirim_ke_atasan("Pengajuan reservasi diperbarui", f"{request.user.nama} mengajukan kembali {reservasi.fasilitas} pada {reservasi.tanggal}.")
         messages.success(request, "Reservasi diperbarui dan dikirim kembali untuk approval.")
         return redirect("reservasi_list")
+    fas_list = _get_fasilitas_list()
     return render(request, "reservations/form.html", {
         "form": form,
         "judul": "Perbaiki Reservasi",
-        "fasilitas_json": _get_fasilitas_json(),
+        "fasilitas_json": json.dumps(fas_list),
+        "fasilitas_list_data": fas_list,
     })
 
 
@@ -287,6 +298,7 @@ def reservasi_cancel(request, pk):
         messages.error(request, "Alasan pembatalan wajib diisi.")
         return redirect(redirect_name)
 
+    was_approved = reservasi.status == Reservasi.Status.APPROVED
     reservasi.status = Reservasi.Status.CANCELLED
     reservasi.alasan_pembatalan = form.cleaned_data["alasan_pembatalan"]
     reservasi.save(update_fields=["status", "alasan_pembatalan", "updated_at"])
@@ -294,6 +306,23 @@ def reservasi_cancel(request, pk):
     if request.user.role == User.Role.SUPER_ADMIN:
         kirim_notifikasi(reservasi.pemohon, "Reservasi dibatalkan", f"Reservasi {reservasi.fasilitas} pada {reservasi.tanggal} dibatalkan oleh Super Admin.")
     kirim_ke_atasan("Reservasi dibatalkan", f"{request.user.nama} membatalkan reservasi {reservasi.fasilitas} pada {reservasi.tanggal}.")
+
+    if was_approved:
+        # Beri tahu pemohon yang status reservasinya sebelumnya NEEDS_REVISION karena bentrok
+        konflik_revisi = Reservasi.objects.filter(
+            fasilitas=reservasi.fasilitas,
+            tanggal=reservasi.tanggal,
+            status=Reservasi.Status.NEEDS_REVISION,
+            jam_mulai__lt=reservasi.jam_selesai,
+            jam_selesai__gt=reservasi.jam_mulai,
+        ).select_related("pemohon")
+        for item in konflik_revisi:
+            kirim_notifikasi(
+                item.pemohon,
+                "Jadwal Fasilitas Tersedia Kembali",
+                f"Reservasi {reservasi.fasilitas} pada {reservasi.tanggal} ({reservasi.jam_mulai.strftime('%H:%M')} - {reservasi.jam_selesai.strftime('%H:%M')}) yang sebelumnya disetujui telah dibatalkan. Anda dapat mengedit dan mengajukan kembali permohonan reservasi Anda."
+            )
+
     messages.success(request, "Reservasi berhasil dibatalkan.")
     return redirect(redirect_name)
 
@@ -327,6 +356,8 @@ def reservasi_manage(request):
 def audit_log_list(request):
     qs = AuditLog.objects.select_related("actor").order_by("-created_at")
     q = request.GET.get("q", "").strip()
+    tanggal = request.GET.get("tanggal", "").strip()
+
     if q:
         qs = qs.filter(
             Q(aksi__icontains=q)
@@ -335,6 +366,12 @@ def audit_log_list(request):
             | Q(actor__nama__icontains=q)
             | Q(actor__username__icontains=q)
         )
+    if tanggal:
+        try:
+            qs = qs.filter(created_at__date=tanggal)
+        except (ValueError, TypeError):
+            pass
+
     paginator = Paginator(qs, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -342,6 +379,7 @@ def audit_log_list(request):
         "logs": page_obj,
         "page_obj": page_obj,
         "q": q,
+        "tanggal": tanggal,
     })
 
 
@@ -450,7 +488,9 @@ def notifikasi_baca(request, pk):
     notifikasi = get_object_or_404(Notifikasi, pk=pk, penerima=request.user)
     notifikasi.status_baca = True
     notifikasi.save(update_fields=["status_baca"])
-    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "notifikasi_list"
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER")
+    if not (next_url and url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()})):
+        next_url = "notifikasi_list"
     return redirect(next_url)
 
 
@@ -459,7 +499,9 @@ def notifikasi_baca(request, pk):
 def notifikasi_baca_semua(request):
     request.user.notifikasi.filter(status_baca=False).update(status_baca=True)
     messages.success(request, "Semua notifikasi telah ditandai sebagai sudah dibaca.")
-    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "notifikasi_list"
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER")
+    if not (next_url and url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()})):
+        next_url = "notifikasi_list"
     return redirect(next_url)
 
 

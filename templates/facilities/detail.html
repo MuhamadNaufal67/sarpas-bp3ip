@@ -3,12 +3,13 @@
 {% block page_title %}{{ fasilitas.nama_fasilitas }}{% endblock %}
 
 {% block content %}
-<div class="page-heading">
-  <h1>{{ fasilitas.nama_fasilitas }}</h1>
-  <p>Rincian data sarana prasarana BP3IP.</p>
-</div>
+<div style="max-width: 760px; margin: 0 auto; width: 100%;">
+  <div class="page-heading" style="text-align: center; margin-bottom: 24px;">
+    <h1>{{ fasilitas.nama_fasilitas }}</h1>
+    <p>Rincian data sarana prasarana BP3IP.</p>
+  </div>
 
-<div class="card" style="max-width: 760px;">
+  <div class="card" style="width: 100%;">
   <table style="margin: 0 0 24px 0;">
     <tbody>
       <tr>
@@ -56,8 +57,9 @@
 
     <!-- Form Hapus dengan Modal Konfirmasi -->
     <form method="post" action="{% url 'fasilitas_delete' fasilitas.pk %}"
-          data-confirm="Apakah Anda yakin ingin <strong>menghapus</strong> fasilitas '{{ fasilitas.nama_fasilitas }}'?<br><br><span style='color: var(--danger-text); font-size: 13px;'>Tindakan ini tidak dapat dibatalkan. Catatan: fasilitas tidak dapat dihapus jika sudah memiliki riwayat reservasi.</span>"
           data-confirm-title="Konfirmasi Hapus Fasilitas"
+          data-confirm-item="{{ fasilitas.nama_fasilitas }}"
+          data-confirm-warning="Tindakan ini tidak dapat dibatalkan. Catatan: fasilitas tidak dapat dihapus jika sudah memiliki riwayat reservasi."
           data-confirm-btn-class="button danger"
           data-confirm-btn-text="Ya, Hapus Fasilitas"
           style="display: inline-block;">
@@ -67,5 +69,6 @@
 
     <a class="button secondary" href="{% url 'fasilitas_list' %}">&larr; Kembali</a>
   </div>
+</div>
 </div>
 {% endblock %}

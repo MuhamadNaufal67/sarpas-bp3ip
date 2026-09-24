@@ -7,6 +7,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}SARPAS BP3IP{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20260918-2">
+  <script>
+    /* Cegah Flash of Unstyled Content (FOUC) saat mode gelap */
+    (function () {
+      try {
+        var t = localStorage.getItem('sarpas_theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      } catch (e) {}
+    })();
+  </script>
   <script src="{% static 'js/main.js' %}?v=20260918-3" defer></script>
 </head>
 
@@ -169,12 +179,8 @@
       <header class="header">
         <div class="header-left">
           <!-- Mobile Hamburger (only visible on mobile) -->
-          <button id="mobile-menu-toggle" class="btn-icon btn-icon-mobile" aria-label="Buka Menu">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <line x1="3" y1="12" x2="21" y2="12"></line>
-              <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
+          <button id="mobile-menu-toggle" class="btn-icon btn-icon-mobile" aria-label="Buka sidebar" title="Buka sidebar">
+            <img class="mobile-menu-logo" src="{% static 'images/LOGO_BP3IP.png' %}" alt="Logo BP3IP">
           </button>
           <h1>{% block page_title %}SARPAS BP3IP{% endblock %}</h1>
         </div>
@@ -199,8 +205,10 @@
 
           <!-- Top-Right Notification Bell & Dropdown -->
           <div class="notification-wrapper">
-            <button type="button" id="notification-bell-btn" class="btn-icon notification-bell-btn" aria-label="Notifikasi{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}" title="Notifikasi{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}">
-              <span class="notification-bell-icon" aria-hidden="true">&#128276;</span>
+            <button type="button" id="notification-bell-btn" class="btn-icon notification-bell-btn" aria-label="Notifikasi{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}" title="Notifikasi{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}" aria-expanded="false" data-mark-read-url="{% url 'notifikasi_tandai_semua_dibaca' %}">
+              <svg class="notification-bell-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm6-5v-5.5c0-3.37-1.82-6.2-5-6.95V3.5a1 1 0 0 0-2 0v1.05c-3.18.75-5 3.58-5 6.95V17l-2 2v1h16v-1l-2-2Z" />
+              </svg>
               {% if unread_notification_count %}
               <span id="notification-badge-dot" class="notification-badge-dot">{{ unread_notification_count }}</span>
               {% endif %}
@@ -216,7 +224,7 @@
                 {% endif %}
               </div>
               <div class="dropdown-body">
-                {% for item in user.notifikasi.all|slice:":5" %}
+                {% for item in header_recent_notifications %}
                 <div class="dropdown-item {% if not item.status_baca %}unread{% endif %}"
                   style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
                   <div style="flex: 1; min-width: 0;">

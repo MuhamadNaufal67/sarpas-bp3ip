@@ -49,6 +49,11 @@ class FasilitasForm(forms.ModelForm):
         nama = self.cleaned_data.get("nama_fasilitas", "").strip()
         if not nama:
             raise ValidationError("Nama fasilitas tidak boleh kosong.")
+        qs = Fasilitas.objects.filter(nama_fasilitas__iexact=nama)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError("Nama fasilitas sudah terdaftar. Gunakan nama yang berbeda.")
         return nama
 
     def clean_lokasi(self):
@@ -103,7 +108,7 @@ class ReservasiForm(forms.ModelForm):
             self.add_error("jam_selesai", "Jam selesai harus lebih besar dari jam mulai.")
         if fasilitas and tanggal and jam_mulai and jam_selesai and jam_selesai > jam_mulai:
             if not fasilitas_tersedia(fasilitas, tanggal, jam_mulai, jam_selesai, self.instance.pk):
-                raise ValidationError("Fasilitas tidak tersedia pada waktu tersebut.")
+                self.add_error(None, "Fasilitas tidak tersedia pada waktu tersebut.")
         if tanggal and tanggal < timezone.localdate():
             self.add_error("tanggal", "Reservasi tidak dapat dibuat untuk tanggal yang sudah lewat.")
         if tanggal and tanggal.weekday() == 6:

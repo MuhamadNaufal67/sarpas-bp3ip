@@ -249,12 +249,14 @@ class SarpasTestCase(TestCase):
         self.assertEqual(res_man.status_code, 200)
         self.assertContains(res_man, "Ruang Rapat A")
 
-        # 4. Search Audit Log
+        # 4. Search & Filter Tanggal Audit Log
         from core.models import AuditLog
+        today_str = timezone.localdate().strftime("%Y-%m-%d")
         AuditLog.objects.create(actor=super_admin, aksi="UJI_LOG", entitas="Test", detail="Pencarian log berhasil")
-        res_aud = self.client.get(reverse("audit_log_list"), {"q": "UJI_LOG"})
+        res_aud = self.client.get(reverse("audit_log_list"), {"q": "UJI_LOG", "tanggal": today_str})
         self.assertEqual(res_aud.status_code, 200)
         self.assertContains(res_aud, "Pencarian log berhasil")
+        self.assertContains(res_aud, today_str)
 
     def test_super_admin_bisa_ajukan_dan_lihat_reservasi(self):
         super_admin = User.objects.create_user(
@@ -304,5 +306,154 @@ class SarpasTestCase(TestCase):
         res = self.client.post(reverse("notifikasi_baca_semua"), {"next": reverse("dashboard")})
         self.assertRedirects(res, reverse("dashboard"))
         self.assertEqual(self.admin_user.notifikasi.filter(status_baca=False).count(), 0)
+
+    def test_post_reservasi_create_view_dan_kode_reservasi(self):
+        self.client.login(username="admin1", password="password-kuat-123")
+        target_date = timezone.localdate() + timedelta(days=2)
+        if target_date.weekday() == 6:
+            target_date += timedelta(days=1)
+
+        post_data = {
+            "fasilitas": self.fasilitas.pk,
+            "tanggal": target_date.strftime("%Y-%m-%d"),
+            "jam_mulai": "08:00",
+            "jam_selesai": "10:00",
+            "keperluan": "Kuliah Umum Maritim",
+            "keterangan": "Perlu proyektor",
+        }
+        response = self.client.post(reverse("reservasi_create"), post_data)
+        self.assertRedirects(response, reverse("reservasi_list"))
+
+        reservasi = Reservasi.objects.filter(pemohon=self.admin_user, keperluan="Kuliah Umum Maritim").first()
+        self.assertIsNotNone(reservasi)
+        self.assertEqual(reservasi.status, Reservasi.Status.PENDING)
+        self.assertTrue(reservasi.kode_reservasi.startswith("RSG"))
+
+    def test_reservasi_form_multiple_errors_display(self):
+        self.client.login(username="admin1", password="password-kuat-123")
+        # Submit form with past date and jam_selesai <= jam_mulai
+        post_data = {
+            "fasilitas": self.fasilitas.pk,
+            "tanggal": "2020-01-01",
+            "jam_mulai": "14:00",
+            "jam_selesai": "10:00",
+            "keperluan": "Test Error",
+        }
+        response = self.client.post(reverse("reservasi_create"), post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context["form"], "tanggal", "Reservasi tidak dapat dibuat untuk tanggal yang sudah lewat.")
+        self.assertFormError(response.context["form"], "jam_selesai", "Jam selesai harus lebih besar dari jam mulai.")
+
+    def test_fasilitas_duplicate_name_prevention_and_delete_protection(self):
+        super_admin = User.objects.create_user(
+            username="superadmin_fas", password="password-super-123", nama="Super Admin Fasilitas",
+            email="superfas@example.com", role=User.Role.SUPER_ADMIN,
+        )
+        self.client.login(username="superadmin_fas", password="password-super-123")
+
+        # Coba buat fasilitas dengan nama yang sama persis (case-insensitive)
+        post_data = {
+            "nama_fasilitas": "ruang rapat a",
+            "kategori": Fasilitas.Kategori.RUANGAN,
+            "lokasi": "Gedung Lain",
+            "kapasitas": 10,
+            "status": Fasilitas.Status.AKTIF,
+        }
+        response = self.client.post(reverse("fasilitas_create"), post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context["form"], "nama_fasilitas", "Nama fasilitas sudah terdaftar. Gunakan nama yang berbeda.")
+
+        # Coba hapus fasilitas yang sudah terikat pada reservasi
+        self.buat_reservasi()
+        del_resp = self.client.post(reverse("fasilitas_delete", args=[self.fasilitas.pk]))
+        self.assertRedirects(del_resp, reverse("fasilitas_list"))
+        self.assertTrue(Fasilitas.objects.filter(pk=self.fasilitas.pk).exists())
+
+    def test_cancel_approved_reservasi_notifies_needs_revision(self):
+        super_admin = User.objects.create_user(
+            username="superadmin_ccl", password="password-super-123", nama="Super Admin Cancel",
+            email="superccl@example.com", role=User.Role.SUPER_ADMIN,
+        )
+        target_date = timezone.localdate() + timedelta(days=3)
+        if target_date.weekday() == 6:
+            target_date += timedelta(days=1)
+
+        # Buat 1 reservasi APPROVED dan 1 reservasi yang tadinya konflik (NEEDS_REVISION)
+        appr_res = Reservasi.objects.create(
+            pemohon=self.admin_user, fasilitas=self.fasilitas, tanggal=target_date,
+            jam_mulai=time(8), jam_selesai=time(11), keperluan="Event A", status=Reservasi.Status.APPROVED,
+        )
+        admin2 = User.objects.create_user(
+            username="admin_rev", password="password-kuat-123", nama="Admin Revisi",
+            email="adminrev@example.com", role=User.Role.ADMIN,
+        )
+        rev_res = Reservasi.objects.create(
+            pemohon=admin2, fasilitas=self.fasilitas, tanggal=target_date,
+            jam_mulai=time(9), jam_selesai=time(10), keperluan="Event B", status=Reservasi.Status.NEEDS_REVISION,
+        )
+
+        self.client.login(username="superadmin_ccl", password="password-super-123")
+        ccl_resp = self.client.post(reverse("reservasi_cancel", args=[appr_res.pk]), {
+            "alasan_pembatalan": "Acara dibatalkan oleh pembina."
+        })
+        self.assertRedirects(ccl_resp, reverse("reservasi_manage"))
+        appr_res.refresh_from_db()
+        self.assertEqual(appr_res.status, Reservasi.Status.CANCELLED)
+
+        # Pastikan user dengan status NEEDS_REVISION menerima notifikasi bahwa jadwal telah tersedia kembali
+        notif = Notifikasi.objects.filter(penerima=admin2, judul="Jadwal Fasilitas Tersedia Kembali").first()
+        self.assertIsNotNone(notif)
+        self.assertIn("sebelumnya disetujui telah dibatalkan", notif.pesan)
+
+    def test_idor_protection_admin_cannot_edit_other_reservation(self):
+        admin2 = User.objects.create_user(
+            username="admin_other", password="password-kuat-123", nama="Admin Lain",
+            email="other@example.com", role=User.Role.ADMIN,
+        )
+        res_admin1 = Reservasi.objects.create(
+            pemohon=self.admin_user, fasilitas=self.fasilitas, tanggal=timezone.localdate() + timedelta(days=2),
+            jam_mulai=time(10), jam_selesai=time(12), keperluan="Rapat Pribadi", status=Reservasi.Status.DRAFT,
+        )
+
+        self.client.login(username="admin_other", password="password-kuat-123")
+        # Admin 2 mencoba edit reservasi Admin 1
+        response = self.client.get(reverse("reservasi_update", args=[res_admin1.pk]))
+        self.assertEqual(response.status_code, 404)
+
+        # Admin 2 mencoba membatalkan reservasi Admin 1
+        ccl_resp = self.client.post(reverse("reservasi_cancel", args=[res_admin1.pk]), {"alasan_pembatalan": "Batal"})
+        self.assertEqual(ccl_resp.status_code, 404)
+
+    def test_open_redirect_prevention(self):
+        response = self.client.post(reverse("login") + "?next=https://evil.com/phishing", {
+            "username": "admin1", "password": "password-kuat-123"
+        })
+        # Harus dialihkan ke dashboard, bukan domain luar
+        self.assertRedirects(response, reverse("dashboard"))
+
+    def test_xss_protection_in_detail_and_form(self):
+        super_admin = User.objects.create_user(
+            username="super_xss", password="password-super-123", nama="Super Admin XSS",
+            email="superxss@example.com", role=User.Role.SUPER_ADMIN,
+        )
+        fasilitas_xss = Fasilitas.objects.create(
+            nama_fasilitas="<script>alert('xss')</script>",
+            kategori=Fasilitas.Kategori.RUANGAN,
+            lokasi="Gedung XSS",
+            kapasitas=10,
+        )
+        self.client.login(username="super_xss", password="password-super-123")
+
+        # Cek fasilitas_detail: tidak boleh merender unescaped HTML dalam atribut onclick / inline
+        res = self.client.get(reverse("fasilitas_detail", args=[fasilitas_xss.pk]))
+        self.assertEqual(res.status_code, 200)
+        # Nama fasilitas harus di-escape atau berada di data-confirm-item yang aman
+        self.assertContains(res, 'data-confirm-item="&lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;"')
+
+        # Cek reservasi_create: fasilitas-data JSON script harus meng-escape payload
+        res_form = self.client.get(reverse("reservasi_create"))
+        self.assertEqual(res_form.status_code, 200)
+        self.assertContains(res_form, 'id="fasilitas-data"')
+        self.assertNotContains(res_form, "<script>alert('xss')</script>;")
 
 

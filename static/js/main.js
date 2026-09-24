@@ -151,42 +151,7 @@ function updateCollapseBtnIcon(isCollapsed) {
 }
 
 /* ==========================================================================
-<<<<<<< HEAD
    3. NOTIFICATION DROPDOWN
-=======
-   3. ACTIVE NAV LINK HIGHLIGHT
-   ========================================================================== */
-function initActiveNavLink() {
-  const currentPath = window.location.pathname;
-  const navLinks = Array.from(document.querySelectorAll(".nav-link"));
-
-  let bestMatch = null;
-  let bestMatchLength = 0;
-
-  navLinks.forEach(function (link) {
-    link.classList.remove("active");
-    const href = link.getAttribute("href");
-    if (!href) return;
-
-    if (currentPath === href) {
-      bestMatch = link;
-      bestMatchLength = Infinity;
-    } else if (bestMatchLength !== Infinity && href !== "/" && currentPath.startsWith(href)) {
-      if (href.length > bestMatchLength) {
-        bestMatch = link;
-        bestMatchLength = href.length;
-      }
-    }
-  });
-
-  if (bestMatch) {
-    bestMatch.classList.add("active");
-  }
-}
-
-/* ==========================================================================
-   4. NOTIFICATION DROPDOWN
->>>>>>> 1ada39c8413235a511af2e6066e1b5262f3bb255
    ========================================================================== */
 function initNotifications() {
   const bellBtn = document.getElementById("notification-bell-btn");
@@ -308,12 +273,45 @@ function initModals() {
       pendingFormToSubmit = form;
 
       const title = form.getAttribute("data-confirm-title") || "Konfirmasi Aksi";
+      const item = form.getAttribute("data-confirm-item");
+      const warning = form.getAttribute("data-confirm-warning");
       const message = form.getAttribute("data-confirm") || "Apakah Anda yakin ingin melanjutkan tindakan ini?";
       const btnClass = form.getAttribute("data-confirm-btn-class") || "button ok";
       const btnText = form.getAttribute("data-confirm-btn-text") || "Ya, Lanjutkan";
 
       if (modalTitle) modalTitle.textContent = title;
-      if (modalMessage) modalMessage.innerHTML = message;
+      if (modalMessage) {
+        if (item) {
+          modalMessage.replaceChildren();
+          const p1 = document.createElement("p");
+          p1.textContent = "Apakah Anda yakin ingin menghapus fasilitas ";
+          const strong = document.createElement("strong");
+          strong.textContent = `"${item}"`;
+          p1.appendChild(strong);
+          p1.appendChild(document.createTextNode("?"));
+          modalMessage.appendChild(p1);
+
+          if (warning) {
+            const p2 = document.createElement("p");
+            p2.style.cssText = "color: var(--danger-text); font-size: 13px; margin-top: 10px;";
+            p2.textContent = warning;
+            modalMessage.appendChild(p2);
+          }
+        } else {
+          // Bersihkan tag/atribut berbahaya jika pesan mengandung markup statis
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(message, "text/html");
+          doc.querySelectorAll("script, iframe, object, embed").forEach(function (el) { el.remove(); });
+          Array.from(doc.body.querySelectorAll("*")).forEach(function (el) {
+            Array.from(el.attributes).forEach(function (attr) {
+              if (attr.name.toLowerCase().startsWith("on") || attr.value.trim().toLowerCase().startsWith("javascript:")) {
+                el.removeAttribute(attr.name);
+              }
+            });
+          });
+          modalMessage.replaceChildren(...doc.body.childNodes);
+        }
+      }
       if (modalConfirmBtn) {
         modalConfirmBtn.className = btnClass;
         modalConfirmBtn.textContent = btnText;
