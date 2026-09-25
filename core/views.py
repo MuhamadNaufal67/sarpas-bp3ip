@@ -174,6 +174,8 @@ def reservasi_list(request):
     qs = Reservasi.objects.filter(pemohon=request.user).select_related("fasilitas")
 
     q = request.GET.get("q", "").strip()
+    tanggal = request.GET.get("tanggal", "").strip()
+    
     if q:
         qs = qs.filter(
             Q(kode_reservasi__icontains=q)
@@ -182,6 +184,11 @@ def reservasi_list(request):
             | Q(status__icontains=q)
             | Q(keperluan__icontains=q)
         )
+    if tanggal:
+        try:
+            qs = qs.filter(tanggal=tanggal)
+        except (ValueError, TypeError):
+            pass
 
     paginator = Paginator(qs, ITEMS_PER_PAGE)
     page_number = request.GET.get("page")
@@ -192,6 +199,7 @@ def reservasi_list(request):
         "page_obj": page_obj,
         "cancel_form": CancelReservasiForm(),
         "q": q,
+        "tanggal": tanggal,
     })
 
 
@@ -331,6 +339,8 @@ def reservasi_cancel(request, pk):
 def reservasi_manage(request):
     qs = Reservasi.objects.select_related("pemohon", "fasilitas").order_by("-tanggal", "jam_mulai")
     q = request.GET.get("q", "").strip()
+    tanggal = request.GET.get("tanggal", "").strip()
+    
     if q:
         qs = qs.filter(
             Q(kode_reservasi__icontains=q)
@@ -341,6 +351,12 @@ def reservasi_manage(request):
             | Q(status__icontains=q)
             | Q(keperluan__icontains=q)
         )
+    if tanggal:
+        try:
+            qs = qs.filter(tanggal=tanggal)
+        except (ValueError, TypeError):
+            pass
+            
     paginator = Paginator(qs, ITEMS_PER_PAGE)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -349,6 +365,7 @@ def reservasi_manage(request):
         "page_obj": page_obj,
         "cancel_form": CancelReservasiForm(),
         "q": q,
+        "tanggal": tanggal,
     })
 
 
@@ -389,6 +406,8 @@ def pengajuan_list(request):
     qs = Reservasi.objects.select_related("pemohon", "fasilitas").order_by("-tanggal", "jam_mulai")
 
     q = request.GET.get("q", "").strip()
+    tanggal = request.GET.get("tanggal", "").strip()
+    
     if q:
         qs = qs.filter(
             Q(kode_reservasi__icontains=q)
@@ -399,6 +418,11 @@ def pengajuan_list(request):
             | Q(status__icontains=q)
             | Q(keperluan__icontains=q)
         )
+    if tanggal:
+        try:
+            qs = qs.filter(tanggal=tanggal)
+        except (ValueError, TypeError):
+            pass
 
     paginator = Paginator(qs, ITEMS_PER_PAGE)
     page_number = request.GET.get("page")
@@ -408,6 +432,7 @@ def pengajuan_list(request):
         "pengajuan": page_obj,
         "page_obj": page_obj,
         "q": q,
+        "tanggal": tanggal,
     })
 
 

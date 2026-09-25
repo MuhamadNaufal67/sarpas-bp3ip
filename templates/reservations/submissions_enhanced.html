@@ -22,11 +22,21 @@
         style="width: 100%; margin: 0;"
       >
     </div>
+    <div style="flex: 0 0 160px;">
+      <label style="font-size: 13px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;" for="id-filter-tanggal">Tanggal Reservasi</label>
+      <input
+        id="id-filter-tanggal"
+        type="date"
+        name="tanggal"
+        value="{{ tanggal|default_if_none:'' }}"
+        style="width: 100%; margin: 0;"
+      >
+    </div>
     <button type="submit" class="button" style="padding: 10px 20px;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 6px;"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
       Cari
     </button>
-    {% if q %}
+    {% if q or tanggal %}
     <a class="button secondary" href="{% url 'pengajuan_list' %}" style="padding: 10px 16px;">Reset</a>
     {% endif %}
   </form>
@@ -122,7 +132,7 @@
     <div style="display: flex; gap: 6px; align-items: center;">
       {% if page_obj.has_previous %}
       <a class="button secondary" style="padding: 6px 14px; font-size: 13px;"
-         href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.previous_page_number }}">&larr; Sebelumnya</a>
+         href="?{% if q %}q={{ q }}&{% endif %}{% if tanggal %}tanggal={{ tanggal }}&{% endif %}page={{ page_obj.previous_page_number }}">&larr; Sebelumnya</a>
       {% else %}
       <span class="button secondary" style="padding: 6px 14px; font-size: 13px; opacity: 0.4; cursor: not-allowed;">&larr; Sebelumnya</span>
       {% endif %}
@@ -132,13 +142,13 @@
         <span class="button" style="padding: 6px 12px; font-size: 13px;">{{ num }}</span>
         {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
         <a class="button secondary" style="padding: 6px 12px; font-size: 13px;"
-           href="?{% if q %}q={{ q }}&{% endif %}page={{ num }}">{{ num }}</a>
+           href="?{% if q %}q={{ q }}&{% endif %}{% if tanggal %}tanggal={{ tanggal }}&{% endif %}page={{ num }}">{{ num }}</a>
         {% endif %}
       {% endfor %}
 
       {% if page_obj.has_next %}
       <a class="button secondary" style="padding: 6px 14px; font-size: 13px;"
-         href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.next_page_number }}">Berikutnya &rarr;</a>
+         href="?{% if q %}q={{ q }}&{% endif %}{% if tanggal %}tanggal={{ tanggal }}&{% endif %}page={{ page_obj.next_page_number }}">Berikutnya &rarr;</a>
       {% else %}
       <span class="button secondary" style="padding: 6px 14px; font-size: 13px; opacity: 0.4; cursor: not-allowed;">Berikutnya &rarr;</span>
       {% endif %}
