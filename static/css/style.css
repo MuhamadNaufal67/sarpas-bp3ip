@@ -1489,12 +1489,6 @@ button.success:hover {
   text-align: center;
 }
 
-.login-logo img {
-  width: 76px;
-  height: 76px;
-  object-fit: contain;
-  margin-bottom: 12px;
-}
 
 .login-card h1 {
   margin: 0 0 6px;
@@ -1689,16 +1683,16 @@ button.success:hover {
 
 .login-logo {
   margin: 0 auto 16px;
-  width: 80px;
-  height: 80px;
+  width: 76px;
+  height: 76px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  border-radius: var(--radius);
-  padding: 8px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  border: none;
 }
 
 .login-logo img {
@@ -1706,6 +1700,13 @@ button.success:hover {
   height: 100%;
   object-fit: contain;
   display: block;
+  background: transparent;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08));
+  transition: filter var(--transition-speed) ease;
+}
+
+[data-theme="dark"] .login-logo img {
+  filter: brightness(1.2) drop-shadow(0 0 1px rgba(120, 180, 255, 0.5));
 }
 
 .login-title {
