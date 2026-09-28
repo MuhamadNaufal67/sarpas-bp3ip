@@ -340,7 +340,8 @@ def reservasi_manage(request):
     qs = Reservasi.objects.select_related("pemohon", "fasilitas").order_by("-tanggal", "jam_mulai")
     q = request.GET.get("q", "").strip()
     tanggal = request.GET.get("tanggal", "").strip()
-    
+    status_filter = request.GET.get("status", "").strip()
+
     if q:
         qs = qs.filter(
             Q(kode_reservasi__icontains=q)
@@ -356,7 +357,9 @@ def reservasi_manage(request):
             qs = qs.filter(tanggal=tanggal)
         except (ValueError, TypeError):
             pass
-            
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+
     paginator = Paginator(qs, ITEMS_PER_PAGE)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -366,6 +369,8 @@ def reservasi_manage(request):
         "cancel_form": CancelReservasiForm(),
         "q": q,
         "tanggal": tanggal,
+        "status_filter": status_filter,
+        "status_choices": Reservasi.Status.choices,
     })
 
 
@@ -407,7 +412,8 @@ def pengajuan_list(request):
 
     q = request.GET.get("q", "").strip()
     tanggal = request.GET.get("tanggal", "").strip()
-    
+    status_filter = request.GET.get("status", "").strip()
+
     if q:
         qs = qs.filter(
             Q(kode_reservasi__icontains=q)
@@ -423,6 +429,8 @@ def pengajuan_list(request):
             qs = qs.filter(tanggal=tanggal)
         except (ValueError, TypeError):
             pass
+    if status_filter:
+        qs = qs.filter(status=status_filter)
 
     paginator = Paginator(qs, ITEMS_PER_PAGE)
     page_number = request.GET.get("page")
@@ -433,6 +441,8 @@ def pengajuan_list(request):
         "page_obj": page_obj,
         "q": q,
         "tanggal": tanggal,
+        "status_filter": status_filter,
+        "status_choices": Reservasi.Status.choices,
     })
 
 
