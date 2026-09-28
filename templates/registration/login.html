@@ -6,7 +6,36 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Masuk | SARPAS BP3IP</title>
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=2">
+  <style>
+    .login-logo {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      margin: 0 auto 16px !important;
+      width: 80px !important;
+      height: 80px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .login-logo img {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: contain !important;
+      display: block !important;
+      filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08));
+    }
+    [data-theme="dark"] .login-logo img {
+      filter: brightness(1.2) drop-shadow(0 0 1px rgba(120, 180, 255, 0.5)) !important;
+    }
+  </style>
   <script>
     /* Apply theme ASAP to avoid flash */
     (function () {
@@ -54,8 +83,8 @@
 
       <!-- Logo & Branding -->
       <div class="login-brand">
-        <div class="login-logo">
-          <img src="{% static 'images/LOGO_BP3IP.png' %}" alt="Logo BP3IP" onerror="this.style.display='none'">
+        <div class="login-logo" style="background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important;">
+          <img src="{% static 'images/LOGO_BP3IP.png' %}" alt="Logo BP3IP" onerror="this.style.display='none'" style="background: transparent !important; border: none !important;">
         </div>
         <h1 class="login-title">SARPAS BP3IP</h1>
         <p class="login-subtitle">
