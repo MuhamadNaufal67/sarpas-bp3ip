@@ -262,7 +262,7 @@
           </div>
 
           <!-- User Profile Info -->
-          <div class="user-profile">
+          <a href="{% url 'profile' %}" class="user-profile{% if request.resolver_match.url_name == 'profile' %} active{% endif %}" title="Lihat Profil Saya" aria-label="Profil Pengguna">
             <div class="user-avatar">
               {{ user.nama|default:user.username|slice:":1"|upper }}
             </div>
@@ -270,7 +270,7 @@
               <span class="user-name">{{ user.nama|default:user.username }}</span>
               <span class="user-role">{{ user.get_role_display }}</span>
             </div>
-          </div>
+          </a>
         </div>
       </header>
 

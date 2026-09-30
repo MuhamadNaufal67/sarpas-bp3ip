@@ -28,4 +28,6 @@ urlpatterns = [
     # Super Admin — Kelola Akun Admin
     path("kelola-akun/", views.admin_list, name="admin_list"),
     path("kelola-akun/tambah/", views.admin_create, name="admin_create"),
+    # Profil Pengguna
+    path("profil/", views.profile_view, name="profile"),
 ]

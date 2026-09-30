@@ -1,6 +1,6 @@
 import json
 from django.contrib import messages
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.paginator import Paginator
@@ -16,7 +16,9 @@ from .decorators import role_required
 from .forms import (
     AdminCreateForm,
     CancelReservasiForm,
+    CustomPasswordChangeForm,
     FasilitasForm,
+    ProfileUpdateForm,
     RejectReservasiForm,
     ReservasiForm,
     fasilitas_tersedia,
@@ -584,3 +586,68 @@ def admin_create(request):
         messages.success(request, f"Akun Admin '{new_admin.username}' berhasil dibuat.")
         return redirect("admin_list")
     return render(request, "accounts/admin_create.html", {"form": form})
+
+
+# ── Profil Pengguna ─────────────────────────────────────────────────────────
+
+@login_required
+def profile_view(request):
+    """Halaman profil pengguna: ringkasan akun, ubah profil, dan ganti kata sandi."""
+    user = request.user
+    profile_form = ProfileUpdateForm(instance=user)
+    password_form = CustomPasswordChangeForm(user=user)
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "update_profile":
+            profile_form = ProfileUpdateForm(request.POST, instance=user)
+            if profile_form.is_valid():
+                profile_form.save()
+                catat_audit(
+                    request, "UBAH_PROFIL", "User", user,
+                    f"Pengguna '{user.username}' memperbarui informasi profil akun."
+                )
+                messages.success(request, "Informasi profil Anda berhasil diperbarui.")
+                return redirect("profile")
+        elif action == "change_password":
+            password_form = CustomPasswordChangeForm(user=user, data=request.POST)
+            if password_form.is_valid():
+                saved_user = password_form.save()
+                update_session_auth_hash(request, saved_user)
+                catat_audit(
+                    request, "GANTI_PASSWORD", "User", user,
+                    f"Pengguna '{user.username}' berhasil memperbarui kata sandi akun."
+                )
+                messages.success(request, "Kata sandi Anda berhasil diperbarui.")
+                return redirect("profile")
+
+    stats = {}
+    recent_reservasi = None
+    recent_audits = None
+
+    if user.role == User.Role.ADMIN:
+        user_res = user.reservasi.all()
+        stats["total_reservasi"] = user_res.count()
+        stats["menunggu"] = user_res.filter(status=Reservasi.Status.PENDING).count()
+        stats["disetujui"] = user_res.filter(status=Reservasi.Status.APPROVED).count()
+        stats["ditolak"] = user_res.filter(status=Reservasi.Status.REJECTED).count()
+        stats["dibatalkan"] = user_res.filter(status=Reservasi.Status.CANCELLED).count()
+        recent_reservasi = user.reservasi.select_related("fasilitas").order_by("-created_at")[:5]
+    elif user.role == User.Role.SUPER_ADMIN:
+        stats["total_audit"] = user.audit_logs.count()
+        stats["total_reservasi_sistem"] = Reservasi.objects.count()
+        stats["total_fasilitas"] = Fasilitas.objects.count()
+        recent_audits = user.audit_logs.order_by("-created_at")[:5]
+    elif user.role == User.Role.ATASAN:
+        stats["total_notifikasi"] = user.notifikasi.count()
+        stats["pending_review"] = Reservasi.objects.filter(status=Reservasi.Status.PENDING).count()
+        recent_audits = user.audit_logs.order_by("-created_at")[:5]
+
+    return render(request, "accounts/profile.html", {
+        "profile_form": profile_form,
+        "password_form": password_form,
+        "stats": stats,
+        "recent_reservasi": recent_reservasi,
+        "recent_audits": recent_audits,
+    })
+

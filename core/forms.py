@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -219,3 +220,48 @@ class AdminCreateForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+
+class ProfileUpdateForm(forms.ModelForm):
+    """Form untuk pengguna memperbarui profil (nama dan email)."""
+    class Meta:
+        model = User
+        fields = ["nama", "email"]
+        widgets = {
+            "nama": forms.TextInput(attrs={"placeholder": "Contoh: Budi Santoso"}),
+            "email": forms.EmailInput(attrs={"placeholder": "Contoh: budi@bp3ip.go.id"}),
+        }
+
+    def clean_nama(self):
+        nama = self.cleaned_data.get("nama", "").strip()
+        if not nama:
+            raise ValidationError("Nama lengkap tidak boleh kosong.")
+        return nama
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").strip().lower()
+        if not email:
+            raise ValidationError("Email tidak boleh kosong.")
+        qs = User.objects.filter(email=email).exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError("Email sudah terdaftar pada akun lain.")
+        return email
+
+
+class CustomPasswordChangeForm(PasswordChangeForm):
+    """Form ganti kata sandi dengan atribut placeholder seragam."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["old_password"].widget.attrs.update({
+            "placeholder": "Masukkan kata sandi saat ini",
+            "autocomplete": "current-password",
+        })
+        self.fields["new_password1"].widget.attrs.update({
+            "placeholder": "Masukkan kata sandi baru",
+            "autocomplete": "new-password",
+        })
+        self.fields["new_password2"].widget.attrs.update({
+            "placeholder": "Ulangi kata sandi baru",
+            "autocomplete": "new-password",
+        })
+

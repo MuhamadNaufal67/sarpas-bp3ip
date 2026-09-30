@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}Profil Pengguna - SARPAS BP3IP{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+
+  <!-- Header Breadcrumb & Title -->
+  <div class="page-heading">
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); margin-bottom: 6px;">
+        <a href="{% url 'dashboard' %}" style="color: var(--text-muted); text-decoration: none;">Dashboard</a>
+        <span>&rsaquo;</span>
+        <span style="color: var(--primary); font-weight: 600;">Profil Pengguna</span>
+      </div>
+      <h1>Profil Saya</h1>
+      <p>Kelola informasi akun personal, keamanan kata sandi, dan pantau aktivitas Anda di SARPAS BP3IP.</p>
+    </div>
+  </div>
+
+  <!-- Hero Profile Banner Card -->
+  <div class="profile-hero-card">
+    <div class="profile-hero-cover"></div>
+    <div class="profile-hero-content">
+      <div class="profile-hero-user">
+        <div class="profile-hero-avatar">
+          {{ user.nama|default:user.username|slice:":1"|upper }}
+        </div>
+        <div class="profile-hero-meta">
+          <h2 class="profile-hero-name">
+            {{ user.nama|default:user.username }}
+            {% if user.role == 'SUPER_ADMIN' %}
+            <span class="badge" style="background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe;">Super Admin</span>
+            {% elif user.role == 'ATASAN' %}
+            <span class="badge badge-pending">Atasan</span>
+            {% else %}
+            <span class="badge badge-approved">Admin</span>
+            {% endif %}
+            <span class="badge" style="background: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-border); font-size: 11px;">
+              ● Aktif
+            </span>
+          </h2>
+          <div class="profile-hero-username">
+            <span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              @{{ user.username }}
+            </span>
+            <span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              {{ user.email }}
+            </span>
+            <span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              Bergabung {{ user.created_at|date:"d M Y" }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Role-based Statistics Cards -->
+  {% if user.role == 'ADMIN' %}
+  <div class="profile-stats-card">
+    <div class="profile-stat-item">
+      <div class="stat-num">{{ stats.total_reservasi }}</div>
+      <div class="stat-lbl">Total Pengajuan</div>
+    </div>
+    <div class="profile-stat-item">
+      <div class="stat-num" style="color: var(--warning);">{{ stats.menunggu }}</div>
+      <div class="stat-lbl">Menunggu Approval</div>
+    </div>
+    <div class="profile-stat-item">
+      <div class="stat-num" style="color: var(--success);">{{ stats.disetujui }}</div>
+      <div class="stat-lbl">Disetujui</div>
+    </div>
+    <div class="profile-stat-item">
+      <div class="stat-num" style="color: var(--danger);">{{ stats.ditolak }}</div>
+      <div class="stat-lbl">Ditolak</div>
+    </div>
+    <div class="profile-stat-item">
+      <div class="stat-num" style="color: var(--text-muted);">{{ stats.dibatalkan }}</div>
+      <div class="stat-lbl">Dibatalkan</div>
+    </div>
+  </div>
+  {% elif user.role == 'SUPER_ADMIN' %}
+  <div class="profile-stats-card">
+    <div class="profile-stat-item">
+      <div class="stat-num">{{ stats.total_reservasi_sistem }}</div>
+      <div class="stat-lbl">Total Reservasi Sistem</div>
+    </div>
+    <div class="profile-stat-item">
+      <div class="stat-num" style="color: var(--info);">{{ stats.total_fasilitas }}</div>
+      <div class="stat-lbl">Fasilitas Terdaftar</div>
+    </div>
+    <div class="profile-stat-item">
+      <div class="stat-num" style="color: var(--primary);">{{ stats.total_audit }}</div>
+      <div class="stat-lbl">Aksi Audit Log Anda</div>
+    </div>
+  </div>
+  {% elif user.role == 'ATASAN' %}
+  <div class="profile-stats-card">
+    <div class="profile-stat-item">
+      <div class="stat-num" style="color: var(--warning);">{{ stats.pending_review }}</div>
+      <div class="stat-lbl">Menunggu Review</div>
+    </div>
+    <div class="profile-stat-item">
+      <div class="stat-num" style="color: var(--primary);">{{ stats.total_notifikasi }}</div>
+      <div class="stat-lbl">Total Notifikasi Masuk</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Forms Section: Edit Profile & Change Password -->
+  <div class="profile-grid">
+
+    <!-- Card 1: Informasi Profil -->
+    <div class="card">
+      <div class="profile-card-header">
+        <div class="profile-card-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <div>
+          <h3>Informasi Profil</h3>
+          <p>Perbarui identitas nama dan alamat surat elektronik Anda.</p>
+        </div>
+      </div>
+
+      <!-- Detail Akun Ringkas -->
+      <div class="profile-info-list">
+        <div class="profile-info-row">
+          <span class="profile-info-label">Username</span>
+          <span class="profile-info-value">@{{ user.username }}</span>
+        </div>
+        <div class="profile-info-row">
+          <span class="profile-info-label">Peran Hak Akses</span>
+          <span class="profile-info-value">{{ user.get_role_display }}</span>
+        </div>
+        <div class="profile-info-row">
+          <span class="profile-info-label">Terakhir Login</span>
+          <span class="profile-info-value">
+            {% if user.last_login %}
+              {{ user.last_login|date:"d M Y, H:i" }} WIB
+            {% else %}
+              Belum tercatat
+            {% endif %}
+          </span>
+        </div>
+      </div>
+
+      <form method="post" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_profile">
+
+        {% if profile_form.non_field_errors %}
+        <div class="message error" style="margin-bottom: 16px;">
+          {{ profile_form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <!-- Nama Lengkap -->
+        <div style="margin-bottom: 16px;">
+          <label for="{{ profile_form.nama.id_for_label }}">
+            Nama Lengkap <span style="color: var(--danger);">*</span>
+          </label>
+          {{ profile_form.nama }}
+          {% if profile_form.nama.errors %}
+          <ul class="errorlist">
+            {% for error in profile_form.nama.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+
+        <!-- Alamat Email -->
+        <div style="margin-bottom: 20px;">
+          <label for="{{ profile_form.email.id_for_label }}">
+            Alamat Email <span style="color: var(--danger);">*</span>
+          </label>
+          {{ profile_form.email }}
+          {% if profile_form.email.errors %}
+          <ul class="errorlist">
+            {% for error in profile_form.email.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="button" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          Simpan Perubahan Profil
+        </button>
+      </form>
+    </div>
+
+    <!-- Card 2: Keamanan & Ganti Kata Sandi -->
+    <div class="card">
+      <div class="profile-card-header">
+        <div class="profile-card-icon" style="background: var(--warning-bg); color: var(--warning);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <div>
+          <h3>Keamanan Kata Sandi</h3>
+          <p>Ubah kata sandi secara berkala untuk menjaga keamanan akun Anda.</p>
+        </div>
+      </div>
+
+      <form method="post" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="change_password">
+
+        {% if password_form.non_field_errors %}
+        <div class="message error" style="margin-bottom: 16px;">
+          {{ password_form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <!-- Password Saat Ini -->
+        <div style="margin-bottom: 16px;">
+          <label for="{{ password_form.old_password.id_for_label }}">
+            Kata Sandi Saat Ini <span style="color: var(--danger);">*</span>
+          </label>
+          {{ password_form.old_password }}
+          {% if password_form.old_password.errors %}
+          <ul class="errorlist">
+            {% for error in password_form.old_password.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+
+        <!-- Password Baru -->
+        <div style="margin-bottom: 16px;">
+          <label for="{{ password_form.new_password1.id_for_label }}">
+            Kata Sandi Baru <span style="color: var(--danger);">*</span>
+          </label>
+          {{ password_form.new_password1 }}
+          {% if password_form.new_password1.errors %}
+          <ul class="errorlist">
+            {% for error in password_form.new_password1.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+
+        <!-- Konfirmasi Password Baru -->
+        <div style="margin-bottom: 16px;">
+          <label for="{{ password_form.new_password2.id_for_label }}">
+            Konfirmasi Kata Sandi Baru <span style="color: var(--danger);">*</span>
+          </label>
+          {{ password_form.new_password2 }}
+          {% if password_form.new_password2.errors %}
+          <ul class="errorlist">
+            {% for error in password_form.new_password2.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+
+        <div class="password-requirements-box" style="margin-bottom: 20px;">
+          <h4>Ketentuan Kata Sandi</h4>
+          <ul class="password-requirements-list">
+            <li>Minimal 8 karakter.</li>
+            <li>Tidak boleh terlalu mirip dengan informasi pribadi Anda.</li>
+            <li>Tidak boleh berupa kata sandi umum yang sering digunakan.</li>
+            <li>Disarankan mengombinasikan huruf besar, angka, dan simbol.</li>
+          </ul>
+        </div>
+
+        <button type="submit" class="button" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Perbarui Kata Sandi
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- Recent Activities / Reservations Section -->
+  {% if user.role == 'ADMIN' and recent_reservasi %}
+  <div class="card" style="margin-top: 4px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text);">Riwayat Reservasi Terbaru Anda</h3>
+        <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">5 pengajuan sarana & prasarana terakhir yang Anda daftarkan.</p>
+      </div>
+      <a href="{% url 'reservasi_list' %}" class="button secondary" style="font-size: 12px; padding: 6px 12px;">
+        Lihat Semua Reservasi &rarr;
+      </a>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table class="table" style="margin: 0;">
+        <thead>
+          <tr>
+            <th>Kode</th>
+            <th>Fasilitas</th>
+            <th>Tanggal & Jam</th>
+            <th>Keperluan</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in recent_reservasi %}
+          <tr>
+            <td>
+              <strong>{{ r.kode_reservasi|default:"-" }}</strong>
+            </td>
+            <td>{{ r.fasilitas.nama_fasilitas }}</td>
+            <td>
+              <div>{{ r.tanggal|date:"d M Y" }}</div>
+              <small style="color: var(--text-muted);">{{ r.jam_mulai|time:"H:i" }} - {{ r.jam_selesai|time:"H:i" }}</small>
+            </td>
+            <td>{{ r.keperluan|truncatechars:35 }}</td>
+            <td>
+              {% if r.status == 'APPROVED' %}
+              <span class="badge badge-approved">Disetujui</span>
+              {% elif r.status == 'PENDING' %}
+              <span class="badge badge-pending">Menunggu</span>
+              {% elif r.status == 'REJECTED' %}
+              <span class="badge badge-rejected">Ditolak</span>
+              {% elif r.status == 'CANCELLED' %}
+              <span class="badge badge-cancelled">Dibatalkan</span>
+              {% else %}
+              <span class="badge">{{ r.get_status_display }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% elif user.role == 'SUPER_ADMIN' and recent_audits %}
+  <div class="card" style="margin-top: 4px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text);">Riwayat Audit Log Terbaru Anda</h3>
+        <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">5 catatan aktivitas operasional terakhir yang Anda lakukan.</p>
+      </div>
+      <a href="{% url 'audit_log_list' %}" class="button secondary" style="font-size: 12px; padding: 6px 12px;">
+        Lihat Semua Audit Log &rarr;
+      </a>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table class="table" style="margin: 0;">
+        <thead>
+          <tr>
+            <th>Waktu</th>
+            <th>Aksi</th>
+            <th>Entitas</th>
+            <th>Detail</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in recent_audits %}
+          <tr>
+            <td style="white-space: nowrap; font-size: 12px;">{{ log.created_at|date:"d M Y, H:i" }}</td>
+            <td><span class="badge">{{ log.aksi }}</span></td>
+            <td>{{ log.entitas }}</td>
+            <td style="font-size: 13px;">{{ log.detail|truncatechars:70 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

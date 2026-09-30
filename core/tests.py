@@ -457,3 +457,53 @@ class SarpasTestCase(TestCase):
         self.assertNotContains(res_form, "<script>alert('xss')</script>;")
 
 
+class ProfileViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="admin_test",
+            password="password123!",
+            nama="Admin Tester",
+            email="admintest@bp3ip.go.id",
+            role=User.Role.ADMIN,
+        )
+
+    def test_profile_requires_login(self):
+        response = self.client.get(reverse("profile"))
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('profile')}")
+
+    def test_profile_view_rendered(self):
+        self.client.login(username="admin_test", password="password123!")
+        response = self.client.get(reverse("profile"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Admin Tester")
+        self.assertContains(response, "@admin_test")
+        self.assertContains(response, "admintest@bp3ip.go.id")
+        self.assertContains(response, "Informasi Profil")
+        self.assertContains(response, "Keamanan Kata Sandi")
+
+    def test_profile_update_success(self):
+        self.client.login(username="admin_test", password="password123!")
+        response = self.client.post(reverse("profile"), {
+            "action": "update_profile",
+            "nama": "Admin Baru BP3IP",
+            "email": "adminbaru@bp3ip.go.id",
+        })
+        self.assertRedirects(response, reverse("profile"))
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.nama, "Admin Baru BP3IP")
+        self.assertEqual(self.user.email, "adminbaru@bp3ip.go.id")
+
+    def test_profile_change_password_success(self):
+        self.client.login(username="admin_test", password="password123!")
+        response = self.client.post(reverse("profile"), {
+            "action": "change_password",
+            "old_password": "password123!",
+            "new_password1": "NewSecurePass889!",
+            "new_password2": "NewSecurePass889!",
+        })
+        self.assertRedirects(response, reverse("profile"))
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("NewSecurePass889!"))
+
+
+
