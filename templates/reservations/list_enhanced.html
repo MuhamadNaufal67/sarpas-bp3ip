@@ -25,7 +25,7 @@
         type="text"
         name="q"
         value="{{ q }}"
-        placeholder="Kode reservasi, fasilitas, status, keperluan..."
+        placeholder="Kode reservasi, fasilitas, keperluan..."
         style="width: 100%; margin: 0;"
       >
     </div>
@@ -39,21 +39,38 @@
         style="width: 100%; margin: 0;"
       >
     </div>
+    <div style="flex: 0 0 160px;">
+      <label style="font-size: 13px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;" for="id-filter-status">Status</label>
+      <select
+        id="id-filter-status"
+        name="status"
+        style="width: 100%; margin: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); font-size: 14px; cursor: pointer;"
+      >
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
     <button type="submit" class="button" style="padding: 10px 20px;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 6px;"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
       Cari
     </button>
-    {% if q or tanggal %}
+    {% if q or tanggal or status_filter %}
     <a class="button secondary" href="{% url 'reservasi_list' %}" style="padding: 10px 16px;">Reset</a>
     {% endif %}
   </form>
-  {% if q %}
-  <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted);">
-    Menampilkan hasil pencarian untuk: <strong>"{{ q }}"</strong>
-    &mdash; {{ page_obj.paginator.count }} reservasi ditemukan.
+  {% if q or status_filter or tanggal %}
+  <div style="margin-top: 10px; font-size: 13px; color: var(--text-muted); display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+    {% if q %}<span>Pencarian: <strong>"{{ q }}"</strong></span>{% endif %}
+    {% if status_filter %}
+    <span>Status: <strong>{% for value, label in status_choices %}{% if value == status_filter %}{{ label }}{% endif %}{% endfor %}</strong></span>
+    {% endif %}
+    {% if tanggal %}<span>Tanggal: <strong>{{ tanggal }}</strong></span>{% endif %}
+    <span>&mdash; {{ page_obj.paginator.count }} reservasi ditemukan.</span>
   </div>
   {% endif %}
 </div>
+
 
 <div class="card">
   <div class="table-wrap">
@@ -144,12 +161,12 @@
                 <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
               </div>
               <div class="empty-state-title">
-                {% if q %}Tidak ada reservasi yang cocok dengan "{{ q }}"{% else %}Belum ada reservasi{% endif %}
+                {% if q or status_filter or tanggal %}Tidak ada reservasi yang sesuai filter{% else %}Belum ada reservasi{% endif %}
               </div>
               <div class="empty-state-desc">
-                {% if q %}Coba kata kunci lain atau <a href="{% url 'reservasi_list' %}">tampilkan semua reservasi</a>.{% else %}Anda belum pernah mengajukan reservasi sarana dan prasarana.{% endif %}
+                {% if q or status_filter or tanggal %}Coba ubah filter pencarian atau <a href="{% url 'reservasi_list' %}">tampilkan semua reservasi</a>.{% else %}Anda belum pernah mengajukan reservasi sarana dan prasarana.{% endif %}
               </div>
-              {% if not q %}
+              {% if not q and not status_filter and not tanggal %}
               <a class="button" href="{% url 'reservasi_create' %}">Ajukan Reservasi Sekarang</a>
               {% endif %}
             </div>
@@ -170,7 +187,7 @@
     <div style="display: flex; gap: 6px; align-items: center;">
       {% if page_obj.has_previous %}
       <a class="button secondary" style="padding: 6px 14px; font-size: 13px;"
-         href="?{% if q %}q={{ q }}&{% endif %}{% if tanggal %}tanggal={{ tanggal }}&{% endif %}page={{ page_obj.previous_page_number }}">&larr; Sebelumnya</a>
+         href="?{% if q %}q={{ q }}&{% endif %}{% if tanggal %}tanggal={{ tanggal }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ page_obj.previous_page_number }}">&larr; Sebelumnya</a>
       {% else %}
       <span class="button secondary" style="padding: 6px 14px; font-size: 13px; opacity: 0.4; cursor: not-allowed;">&larr; Sebelumnya</span>
       {% endif %}
@@ -180,13 +197,13 @@
         <span class="button" style="padding: 6px 12px; font-size: 13px;">{{ num }}</span>
         {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
         <a class="button secondary" style="padding: 6px 12px; font-size: 13px;"
-           href="?{% if q %}q={{ q }}&{% endif %}{% if tanggal %}tanggal={{ tanggal }}&{% endif %}page={{ num }}">{{ num }}</a>
+           href="?{% if q %}q={{ q }}&{% endif %}{% if tanggal %}tanggal={{ tanggal }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ num }}">{{ num }}</a>
         {% endif %}
       {% endfor %}
 
       {% if page_obj.has_next %}
       <a class="button secondary" style="padding: 6px 14px; font-size: 13px;"
-         href="?{% if q %}q={{ q }}&{% endif %}{% if tanggal %}tanggal={{ tanggal }}&{% endif %}page={{ page_obj.next_page_number }}">Berikutnya &rarr;</a>
+         href="?{% if q %}q={{ q }}&{% endif %}{% if tanggal %}tanggal={{ tanggal }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ page_obj.next_page_number }}">Berikutnya &rarr;</a>
       {% else %}
       <span class="button secondary" style="padding: 6px 14px; font-size: 13px; opacity: 0.4; cursor: not-allowed;">Berikutnya &rarr;</span>
       {% endif %}

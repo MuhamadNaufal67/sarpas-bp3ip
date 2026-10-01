@@ -172,18 +172,18 @@ def fasilitas_delete(request, pk):
 
 @role_required(User.Role.ADMIN, User.Role.SUPER_ADMIN)
 def reservasi_list(request):
-    """Daftar reservasi milik Admin yang sedang login, dengan search dan pagination."""
+    """Daftar reservasi milik Admin yang sedang login, dengan search, filter status, dan pagination."""
     qs = Reservasi.objects.filter(pemohon=request.user).select_related("fasilitas")
 
     q = request.GET.get("q", "").strip()
     tanggal = request.GET.get("tanggal", "").strip()
-    
+    status_filter = request.GET.get("status", "").strip()
+
     if q:
         qs = qs.filter(
             Q(kode_reservasi__icontains=q)
             | Q(fasilitas__nama_fasilitas__icontains=q)
             | Q(fasilitas__kategori__icontains=q)
-            | Q(status__icontains=q)
             | Q(keperluan__icontains=q)
         )
     if tanggal:
@@ -191,10 +191,19 @@ def reservasi_list(request):
             qs = qs.filter(tanggal=tanggal)
         except (ValueError, TypeError):
             pass
+    if status_filter:
+        qs = qs.filter(status=status_filter)
 
     paginator = Paginator(qs, ITEMS_PER_PAGE)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
+
+    status_choices = [
+        ("", "Semua Status"),
+        ("PENDING", "Menunggu Approval"),
+        ("APPROVED", "Disetujui"),
+        ("REJECTED", "Ditolak"),
+    ]
 
     return render(request, "reservations/list_enhanced.html", {
         "reservasi_list": page_obj,
@@ -202,6 +211,8 @@ def reservasi_list(request):
         "cancel_form": CancelReservasiForm(),
         "q": q,
         "tanggal": tanggal,
+        "status_filter": status_filter,
+        "status_choices": status_choices,
     })
 
 
