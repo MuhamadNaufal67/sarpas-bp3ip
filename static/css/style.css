@@ -2249,16 +2249,17 @@ button.success:hover {
 .profile-hero-content {
   padding: 0 28px 24px 28px;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 20px;
-  margin-top: -50px;
+  position: relative;
+  z-index: 2;
 }
 
 .profile-hero-user {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 22px;
   flex-wrap: wrap;
 }
@@ -2278,9 +2279,13 @@ button.success:hover {
   box-shadow: var(--shadow-lg);
   flex-shrink: 0;
   letter-spacing: -1px;
+  margin-top: -50px;
+  position: relative;
+  z-index: 3;
 }
 
 .profile-hero-meta {
+  padding-top: 14px;
   padding-bottom: 6px;
 }
 
@@ -2368,13 +2373,27 @@ button.success:hover {
   
   .profile-hero-content {
     padding: 0 20px 20px 20px;
-    margin-top: -40px;
   }
 
   .profile-hero-avatar {
     width: 80px;
     height: 80px;
     font-size: 32px;
+    margin-top: -40px;
+  }
+
+  .profile-hero-meta {
+    padding-top: 10px;
+  }
+}
+
+@media (max-width: 576px) {
+  .profile-hero-user {
+    gap: 16px;
+  }
+
+  .profile-hero-meta {
+    padding-top: 6px;
   }
 }
 
